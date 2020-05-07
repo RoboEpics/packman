@@ -6,7 +6,7 @@ from django.utils.module_loading import import_string
 
 from problem.models import Submission
 
-# Initialize message queue client and assign it to app object
+# Initialize message queue client
 client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
 
 
