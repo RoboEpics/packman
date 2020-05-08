@@ -3,6 +3,7 @@ Django==3.0.6
 django-rest-framework==0.1.0
 django-taggit==1.2.0
 djangorestframework==3.11.0
+jupyter-repo2docker==0.11.0
 pika==1.1.0
 Pillow==7.1.2
 python-slugify==4.0.0
