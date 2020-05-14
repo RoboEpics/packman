@@ -1,12 +1,9 @@
 from .common_settings import *
 
-config.read('%s/configs/production.cfg' % BASE_DIR)
+config.read(os.environ.get('CONFIG_FILE', '').strip() or os.path.join(BASE_DIR, 'configs', 'production.cfg'))
 DJANGO_HOST = "production"
 
-SECRET_KEY = config['security']['SECRET_KEY']
-DEBUG = True
-
-ALLOWED_HOSTS += [l.strip() for l in open('configs/temporary-hosts.txt').readlines()]
+ALLOWED_HOSTS += list(map(str.strip, open(os.environ.get('HOSTS_FILE', '').strip() or os.path.join(BASE_DIR, 'configs', 'hosts.txt')).readlines()))
 
 ADMINS = [
     ('Ali Mirlou', 'alimirlou@gmail.com'),
@@ -16,9 +13,11 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': config['postgresql']['ENGINE'],
-        'NAME': config['postgresql']['NAME'],
-        'USER': config['postgresql']['USER'],
-        'PASSWORD': config['postgresql']['PASSWORD']
+        'ENGINE': config['database']['ENGINE'],
+        'HOST': os.environ.get('DATABASE_HOST', '') or config.get('database', 'HOST', fallback=None),
+        'PORT': os.environ.get('DATABASE_PORT', '') or config.get('database', 'PORT', fallback=None),
+        'NAME': config['database']['NAME'],
+        'USER': os.environ.get('DATABASE_USER', '') or config['database']['USER'],
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', '') or config['database']['PASSWORD']
     }
 }

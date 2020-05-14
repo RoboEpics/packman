@@ -15,3 +15,5 @@ DATABASES = {
         'NAME': os.environ.get('DATABASE_NAME', '').strip() or config.get('database', 'NAME', fallback=None) or 'db.sqlite3',
     }
 }
+
+STATIC_ROOT = 'static'
