@@ -38,4 +38,4 @@ COPY . /code/
 
 EXPOSE 8000
 
-CMD gunicorn --worker-class=gevent --capture-output --access-logfile /var/log/gunicorn.log --error-logfile /var/log/gunicorn.err.log --workers ${WORKERS} --bind 0.0.0.0:8000 XeracML.wsgi
+CMD gunicorn --worker-class=gevent --capture-output --access-logfile /var/log/gunicorn.log --error-logfile /var/log/gunicorn.err.log --workers ${WORKERS} --bind 0.0.0.0:8000 dockerizer.wsgi
