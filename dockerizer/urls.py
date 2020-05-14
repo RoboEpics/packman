@@ -13,20 +13,20 @@ client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
 def create_docker_image(gitlab_repo, commit_hash):
     # Create Docker image from git repository using jupyter-repo2docker
     image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, gitlab_repo))
-    Popen([
+    Popen((
         'jupyter-repo2docker', '--no-run',
         '--image-name', image_name,
         '--ref', commit_hash,
         '/'.join((settings.GITLAB_HOST, gitlab_repo))
-    ], stdout=PIPE, stderr=PIPE)
+    ), stdout=PIPE, stderr=PIPE)
 
     return image_name
 
 
 def push_image_to_registry(image_name):
-    password = Popen(['cat', settings.GITLAB_ADMIN_PASSWORD_FILE], stdout=PIPE)
-    Popen(['sudo', 'docker', 'login', '--username', settings.GITLAB_ADMIN_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST], stdin=password.stdout, stdout=PIPE, stderr=PIPE)
-    Popen(['sudo', 'docker', 'push', image_name], stdout=PIPE, stderr=PIPE)
+    password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
+    Popen(('sudo', 'docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE)
+    Popen(('sudo', 'docker', 'push', image_name), stdout=PIPE, stderr=PIPE)
 
 
 def handle_new_message(channel, method, properties, body):
