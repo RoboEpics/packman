@@ -1,11 +1,12 @@
 asgiref==3.2.7
 Django==3.0.6
-django-rest-framework==0.1.0
 django-taggit==1.2.0
 djangorestframework==3.11.0
+gunicorn[gevent]==20.0.4
 jupyter-repo2docker==0.11.0
 pika==1.1.0
 Pillow==7.1.2
+psycopg2-binary==2.8.5
 python-slugify==4.0.0
 pytz==2020.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@1c0361c5cd7a6362ccf2f4ccb9f309769e4a9515#egg=rabbitmq_client
