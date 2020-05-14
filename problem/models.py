@@ -12,8 +12,8 @@ Operator = get_operator_model()
 
 
 class ScoreDefinition(models.Model):
-    score_name = models.CharField(max_length=255)
-    score_description = models.TextField()
+    name = models.CharField(max_length=40, unique=True)
+    description = models.TextField()
 
 
 class Problem(models.Model):
@@ -48,6 +48,7 @@ class Submission(models.Model):
     problem = models.ForeignKey(Problem, models.CASCADE)
 
     reference = models.CharField(max_length=41)
+    command = models.CharField(max_length=255, null=True, blank=True)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -72,6 +73,7 @@ class Submission(models.Model):
 class Run(models.Model):
     owner = models.ForeignKey(Operator, models.CASCADE)
     problem = models.ForeignKey(Problem, models.CASCADE)
+    score_definitions = models.ManyToManyField(ScoreDefinition, blank=True)
 
     class RunStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -102,3 +104,6 @@ class Score(models.Model):
     gathered_submission = models.ForeignKey(GatheredSubmission, models.CASCADE)
     definition = models.ForeignKey(ScoreDefinition, models.CASCADE)
     value = models.BigIntegerField()
+
+    class Meta:
+        unique_together = ('gathered_submission', 'definition')
