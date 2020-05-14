@@ -1,5 +1,12 @@
+#!/usr/bin/env python3
+import os
 from subprocess import Popen, PIPE
 from json import loads
+
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dockerizer.settings')
+django.setup()
 
 from django.conf import settings
 from django.utils.module_loading import import_string
@@ -42,5 +49,3 @@ def handle_new_message(channel, method, properties, body):
 
 print('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
 client.pull(handle_new_message, settings.QUEUE_NAME)
-
-urlpatterns = []
