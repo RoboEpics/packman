@@ -32,10 +32,6 @@ ENV DATABASE_USER ${DATABASE_USER}
 ARG DATABASE_PASSWORD
 ENV DATABASE_PASSWORD ${DATABASE_PASSWORD}
 
-ENV WORKERS 2
-
 COPY . /code/
 
-EXPOSE 8000
-
-CMD gunicorn --worker-class=gevent --capture-output --access-logfile /var/log/gunicorn.log --error-logfile /var/log/gunicorn.err.log --workers ${WORKERS} --bind 0.0.0.0:8000 dockerizer.wsgi
+CMD python run.py

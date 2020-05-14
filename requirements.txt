@@ -1,8 +1,6 @@
 asgiref==3.2.7
 Django==3.0.6
 django-taggit==1.2.0
-djangorestframework==3.11.0
-gunicorn[gevent]==20.0.4
 jupyter-repo2docker==0.11.0
 pika==1.1.0
 Pillow==7.1.2
