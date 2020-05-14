@@ -6,8 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from django.dispatch import Signal
 from django.core.exceptions import ValidationError
 
-from rest_framework.authtoken.models import Token
-
 from .utils import normalize_username
 
 
@@ -43,13 +41,6 @@ class Operator(models.Model):
 
     def __str__(self):
         return self.__repr__()
-
-
-def login(user):
-    if not user.is_active:
-        raise ValidationError(_("This account is inactive."), code='inactive')
-    token, created = Token.objects.get_or_create(user=user)
-    return token.key
 
 
 class UserManager(models.Manager):
