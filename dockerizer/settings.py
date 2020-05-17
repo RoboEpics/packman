@@ -32,7 +32,7 @@ PROBLEM_CONFIG_PATH = config['path']['PROBLEM_CONFIG']
 LOGGING = {
     'disable_existing_loggers': False,
     'root': {
-        'level': os.environ.get('LOGLEVEL', None).upper() or config.get('log', 'LEVEL', fallback=None) or ('DEBUG' if DEBUG else 'INFO')
+        'level': (os.environ.get('LOGLEVEL', None) or config.get('log', 'LEVEL', fallback=None) or ('DEBUG' if DEBUG else 'INFO')).upper()
     }
 }
 
