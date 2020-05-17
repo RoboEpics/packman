@@ -3,8 +3,6 @@ from .common_settings import *
 config.read(os.environ.get('CONFIG_FILE', '').strip() or os.path.join(BASE_DIR, 'configs', 'production.cfg'))
 DJANGO_HOST = "production"
 
-ALLOWED_HOSTS += list(map(str.strip, open(os.environ.get('HOSTS_FILE', '').strip() or os.path.join(BASE_DIR, 'configs', 'hosts.txt')).readlines()))
-
 ADMINS = [
     ('Ali Mirlou', 'alimirlou@gmail.com'),
     ('Ali Mirloo', 'alimirloohome2@gmail.com'),
