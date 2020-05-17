@@ -1,5 +1,8 @@
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 if os.environ.get('PRODUCTION', '0') == '1':
     from .production_settings import *
 else:
@@ -24,3 +27,17 @@ DOCKER_REGISTRY_PASSWORD_FILE = config['registry']['PASSWORD_FILE']
 
 # Paths
 PROBLEM_CONFIG_PATH = config['path']['PROBLEM_CONFIG']
+
+# Logging
+LOGGING = {
+    'disable_existing_loggers': False,
+    'root': {
+        'level': os.environ.get('LOGLEVEL', None).upper() or config.get('log', 'LEVEL', fallback=None) or ('DEBUG' if DEBUG else 'INFO')
+    }
+}
+
+# Sentry
+sentry_sdk.init(
+    dsn=config['sentry']['DSN'],
+    integrations=[DjangoIntegration()]
+)
