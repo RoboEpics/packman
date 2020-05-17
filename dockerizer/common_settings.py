@@ -1,8 +1,8 @@
 import os
 import configparser
 
-# import sentry_sdk
-# from sentry_sdk.integrations.django import DjangoIntegration
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,3 +33,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+sentry_sdk.init(
+    dsn="https://96f82fff5cfa468cabc7c63e52a99b51@o294289.ingest.sentry.io/5243511",
+    integrations=[DjangoIntegration()],
+)
