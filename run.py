@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import logging
 from subprocess import Popen, PIPE
 from json import loads
 
@@ -37,15 +38,23 @@ def push_image_to_registry(image_name):
 
 
 def handle_new_message(channel, method, properties, body):
+    logging.info("Received new message from queue...")
+
     request = loads(body)
+    logging.debug("Message content: %s" % str(request))
+
     submission = Submission.objects.get(id=request['submission_id'])
 
     # Create Docker image from Gitlab repository
+    logging.debug("Creating Docker image for submission %d..." % submission.id)
     image_name = create_docker_image(submission.generate_image_name(), submission.reference)
+    logging.debug("Successfully created Docker image for submission %d!" % submission.id)
 
     # Push the image to Docker registry
+    logging.debug("Pushing Docker image for submission %d..." % submission.id)
     push_image_to_registry(image_name)
+    logging.debug("Successfully pushed Docker image for submission %d!" % submission.id)
 
 
-print('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
+logging.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
 client.pull(handle_new_message, settings.QUEUE_NAME)
