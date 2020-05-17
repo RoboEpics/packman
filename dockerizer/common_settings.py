@@ -11,6 +11,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.auth',
+    'django.contrib.contenttypes',
 
     'taggit',
 
