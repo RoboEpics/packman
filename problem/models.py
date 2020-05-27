@@ -63,11 +63,11 @@ class Submission(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
-    def generate_gitlab_repo_path(self):
-        return "%s/%s" % (self.owner.username, self.problem.get_slug())
+    def generate_git_repo_path(self):
+        return "%s/%s" % (self.problem.get_slug(), self.owner.username)
 
     def generate_image_name(self):
-        return "%s:%d" % (self.generate_gitlab_repo_path(), self.id)
+        return "%s:%d" % (self.generate_git_repo_path(), self.id)
 
 
 class Run(models.Model):

@@ -19,9 +19,9 @@ from problem.models import Submission
 client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
 
 
-def create_docker_image(gitlab_repo, commit_hash):
+def create_docker_image(gitlab_repo, commit_hash, image_name):
     # Create Docker image from git repository using jupyter-repo2docker
-    image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, gitlab_repo))
+    image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
     Popen((
         'jupyter-repo2docker', '--no-run',
         '--image-name', image_name,
@@ -48,7 +48,7 @@ def handle_new_message(channel, method, properties, body):
 
     # Create Docker image from Gitlab repository
     logger.debug("Creating Docker image for submission %d..." % submission.id)
-    image_name = create_docker_image(submission.generate_image_name(), submission.reference)
+    image_name = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
     logger.debug("Successfully created Docker image for submission %d!" % submission.id)
 
     # Push the image to Docker registry
