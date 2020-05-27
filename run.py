@@ -57,5 +57,6 @@ def handle_new_message(channel, method, properties, body):
     logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
 
 
-logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
-client.pull(handle_new_message, settings.QUEUE_NAME)
+if __name__ == "__main__":
+    logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
+    client.pull(handle_new_message, settings.QUEUE_NAME)
