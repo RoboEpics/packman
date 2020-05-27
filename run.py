@@ -4,10 +4,10 @@ import logging
 from subprocess import Popen, PIPE
 from json import loads
 
-import django
-
 logger = logging.getLogger('runner')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dockerizer.settings')
+
+import django
 django.setup()
 
 from django.conf import settings
