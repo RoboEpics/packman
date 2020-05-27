@@ -8,7 +8,7 @@ RUN add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/debian \
    $(lsb_release -cs) \
    stable"
-RUN apt-get -q update && apt-get -qqy install docker-ce docker-ce-cli containerd.io && rm -rf /var/lib/apt/lists/*
+RUN apt-get -q update && apt-get -qqy install docker-ce-cli && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED 1
 
