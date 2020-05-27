@@ -67,7 +67,7 @@ class Submission(models.Model):
         return "%s/%s" % (self.problem.get_slug(), self.owner.username)
 
     def generate_image_name(self):
-        return "%s:%d" % (self.generate_git_repo_path(), self.id)
+        return "%s:%d" % (self.generate_git_repo_path().lower(), self.id)
 
 
 class Run(models.Model):
