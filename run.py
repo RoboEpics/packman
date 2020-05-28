@@ -3,6 +3,8 @@ import os
 import logging
 from subprocess import Popen, PIPE
 from json import loads
+from repo2docker.app import Repo2Docker
+from sentry_sdk import capture_exception
 
 logger = logging.getLogger('runner')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dockerizer.settings')
@@ -21,13 +23,16 @@ client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
 
 def create_docker_image(gitlab_repo, commit_hash, image_name):
     # Create Docker image from git repository using jupyter-repo2docker
-    image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
-    Popen((
-        'jupyter-repo2docker', '--no-run',
-        '--image-name', image_name,
-        '--ref', commit_hash,
-        '/'.join(('https://' + settings.GITLAB_HOST, gitlab_repo))
-    ), stdout=PIPE, stderr=PIPE)
+    r2d = Repo2Docker()
+
+    r2d.repo = '/'.join(('https://' + settings.GITLAB_HOST, gitlab_repo))
+    r2d.ref = commit_hash
+    r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
+    r2d.user_id = 42
+    r2d.user_name = 'notroot'
+
+    r2d.initialize()
+    r2d.build()
 
     return image_name
 
