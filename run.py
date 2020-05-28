@@ -72,10 +72,12 @@ def handle_new_message(channel, method, properties, body):
     # Push the image to Docker registry
     logger.debug("Pushing Docker image for submission %d..." % submission.id)
     status = push_image_to_registry(image_name)
-    logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
 
     if status:
+        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
         channel.basic_ack(method.delivery_tag)
+    else:
+        logger.debug("Something went wrong while pushing Docker image for submission %d!" % submission.id)
 
 
 if __name__ == "__main__":
