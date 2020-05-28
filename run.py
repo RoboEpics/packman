@@ -66,7 +66,15 @@ def handle_new_message(channel, method, properties, body):
 
     # Create Docker image from Gitlab repository
     logger.debug("Creating Docker image for submission %d..." % submission.id)
+
+    submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
+    submission.save()
+
     image_name = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
+
+    submission.status = Submission.SubmissionStatus.IMAGE_BUILD_SUCCESSFUL
+    submission.save()
+
     logger.debug("Successfully created Docker image for submission %d!" % submission.id)
 
     # Push the image to Docker registry
@@ -74,9 +82,16 @@ def handle_new_message(channel, method, properties, body):
     status = push_image_to_registry(image_name)
 
     if status:
-        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
+        submission.status = Submission.SubmissionStatus.IMAGE_READY
+        submission.save()
+
         channel.basic_ack(method.delivery_tag)
+
+        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
     else:
+        submission.status = Submission.SubmissionStatus.IMAGE_PUSH_FAILED
+        submission.save()
+
         logger.debug("Something went wrong while pushing Docker image for submission %d!" % submission.id)
 
 

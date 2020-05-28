@@ -59,6 +59,9 @@ class Submission(models.Model):
         IMAGE_BUILD_FAILED = 40, _("Image Build Failed")
         IMAGE_BUILD_SUCCESSFUL = 50, _("Image Build Successful")
 
+        IMAGE_PUSH_FAILED = 60, _("Image Push Failed")
+        IMAGE_READY = 70, _("Image Ready")
+
     status = models.PositiveSmallIntegerField(choices=SubmissionStatus.choices, default=SubmissionStatus.WAITING_IN_QUEUE)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
@@ -84,11 +87,11 @@ class Run(models.Model):
         POD_BUILD_FAILED = 40, _("Pod Build Failed")
         POD_BUILD_SUCCESSFUL = 50, _("Pod Build Successful")
 
-        WAITING_IN_QUEUE_FOR_EVALUATION = 60, _("Waiting In Queue To Run")
-        EVALUATION_INITIATED = 70, _("Run Initiated")
+        WAITING_IN_QUEUE_FOR_RUN = 60, _("Waiting In Queue To Run")
+        RUN_INITIATED = 70, _("Run Initiated")
 
-        EVALUATION_FAILED = 80, _("Run Failed")
-        EVALUATION_SUCCESSFUL = 90, _("Run Successful")
+        RUN_FAILED = 80, _("Run Failed")
+        RUN_SUCCESSFUL = 90, _("Run Successful")
 
     status = models.PositiveSmallIntegerField(choices=RunStatus.choices, default=RunStatus.WAITING_IN_QUEUE)
 
