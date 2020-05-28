@@ -41,17 +41,19 @@ def push_image_to_registry(image_name):
     password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
     if password.wait() != 0:
         capture_exception()
-        return
+        return False
 
     login = Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE)
     if login.wait() != 0:
         capture_exception()
-        return
+        return False
 
     push = Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE)
     if push.wait() != 0:
         capture_exception()
-        return
+        return False
+
+    return True
 
 
 def handle_new_message(channel, method, properties, body):
@@ -69,8 +71,11 @@ def handle_new_message(channel, method, properties, body):
 
     # Push the image to Docker registry
     logger.debug("Pushing Docker image for submission %d..." % submission.id)
-    push_image_to_registry(image_name)
+    status = push_image_to_registry(image_name)
     logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
+
+    if status:
+        channel.basic_ack(method.delivery_tag)
 
 
 if __name__ == "__main__":
