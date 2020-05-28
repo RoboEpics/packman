@@ -39,8 +39,19 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
 
 def push_image_to_registry(image_name):
     password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
-    Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE)
-    Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE)
+    if password.wait() != 0:
+        capture_exception()
+        return
+
+    login = Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE)
+    if login.wait() != 0:
+        capture_exception()
+        return
+
+    push = Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE)
+    if push.wait() != 0:
+        capture_exception()
+        return
 
 
 def handle_new_message(channel, method, properties, body):
