@@ -25,6 +25,7 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     # Create Docker image from git repository using jupyter-repo2docker
     r2d = Repo2Docker()
 
+    r2d.repo = f"https://oauth2:{settings.GITLAB_TOKEN}@{settings.GITLAB_HOST}/{gitlab_repo}.git"
     r2d.repo = '/'.join(('https://' + settings.GITLAB_HOST, gitlab_repo))
     r2d.ref = commit_hash
     r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))

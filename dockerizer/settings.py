@@ -19,6 +19,7 @@ QUEUE_NAME = config['queue']['NAME']
 GITLAB_HOST = config['gitlab']['HOST']
 GITLAB_ADMIN_USERNAME = config['gitlab']['USERNAME']
 GITLAB_ADMIN_PASSWORD_FILE = config['gitlab']['PASSWORD_FILE']
+GITLAB_TOKEN = config['gitlab']['TOKEN']
 
 # Docker Registry
 DOCKER_REGISTRY_HOST = config['registry']['HOST']
