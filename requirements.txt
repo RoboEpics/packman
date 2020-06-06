@@ -1,7 +1,6 @@
 asgiref==3.2.7
-Django==3.0.6
+Django==3.0.7
 django-taggit==1.3.0
-jupyter-repo2docker==0.11.0
 pika==1.1.0
 Pillow==7.1.2
 psycopg2-binary==2.8.5
@@ -9,6 +8,7 @@ python-slugify==4.0.0
 pytz==2020.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@1c0361c5cd7a6362ccf2f4ccb9f309769e4a9515#egg=rabbitmq_client
 -e git://github.com/Syfract/simple-queue-client.git@af662fda4f7f9f34349e20211bbc3efc2cffcfdf#egg=simple_queue_client
+-e git://github.com/AliMirlou/repo2docker.git@bb08414a135536b166f45d90c40163b53afeaa24#egg=jupyter-repo2docker
 sentry-sdk==0.14.4
 sqlparse==0.3.1
 text-unidecode==1.3
