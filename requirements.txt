@@ -8,7 +8,7 @@ python-slugify==4.0.0
 pytz==2020.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@1c0361c5cd7a6362ccf2f4ccb9f309769e4a9515#egg=rabbitmq_client
 -e git://github.com/Syfract/simple-queue-client.git@af662fda4f7f9f34349e20211bbc3efc2cffcfdf#egg=simple_queue_client
--e git://github.com/AliMirlou/repo2docker.git@bb08414a135536b166f45d90c40163b53afeaa24#egg=jupyter-repo2docker
+-e git://github.com/AliMirlou/repo2docker.git@f9b6990f44dccb17ed85405c1b69eefbc11421a5#egg=jupyter-repo2docker
 sentry-sdk==0.14.4
 sqlparse==0.3.1
 text-unidecode==1.3

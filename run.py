@@ -4,6 +4,17 @@ import logging
 from subprocess import Popen, PIPE
 from json import loads
 from repo2docker.app import Repo2Docker
+from repo2docker.buildpacks import (
+    CondaBuildPack,
+    DockerBuildPack,
+    JuliaProjectTomlBuildPack,
+    JuliaRequireBuildPack,
+    LegacyBinderDockerBuildPack,
+    NixBuildPack,
+    PipfileBuildPack,
+    PythonBuildPack,
+    RBuildPack,
+)
 from sentry_sdk import capture_exception
 
 logger = logging.getLogger('runner')
@@ -17,6 +28,21 @@ from django.utils.module_loading import import_string
 
 from problem.models import Submission
 
+from custom_buildpacks import JavaNoBuildToolBuildPack, CustomRunBuildPack
+
+buildpacks = [
+    DockerBuildPack,
+    CustomRunBuildPack,
+    JuliaProjectTomlBuildPack,
+    JuliaRequireBuildPack,
+    NixBuildPack,
+    RBuildPack,
+    CondaBuildPack,
+    PipfileBuildPack,
+    PythonBuildPack,
+    JavaNoBuildToolBuildPack
+]
+
 # Initialize message queue client
 client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
 
@@ -29,7 +55,7 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     r2d.ref = commit_hash
     r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
     r2d.user_id = 2000
-    r2d.user_name = 'notroot'
+    r2d.buildpacks = buildpacks
 
     r2d.initialize()
     r2d.build()
