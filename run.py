@@ -55,6 +55,7 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     r2d.ref = commit_hash
     r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
     r2d.user_id = 2000
+    r2d.user_name = 'jovyan'
     r2d.buildpacks = buildpacks
 
     r2d.initialize()
