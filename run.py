@@ -89,7 +89,12 @@ def handle_new_message(channel, method, properties, body):
     request = loads(body)
     logger.debug("Message content: %s" % str(request))
 
-    submission = Submission.objects.get(id=request['submission_id'])
+    try:
+        submission = Submission.objects.get(id=request['submission_id'])
+    except Submission.DoesNotExist:
+        logger.warning("No submission with the given exists! Dropping message from queue...")
+        channel.basic_ack(method.delivery_tag)
+        return
 
     # Create Docker image from Gitlab repository
     logger.debug("Creating Docker image for submission %d..." % submission.id)
