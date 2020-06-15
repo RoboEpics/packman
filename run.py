@@ -27,7 +27,7 @@ from django.utils.module_loading import import_string
 
 from problem.models import Submission
 
-from custom_buildpacks import JavaNoBuildToolBuildPack, CustomRunBuildPack
+from buildpacks import JavaNoBuildToolBuildPack, CustomRunBuildPack
 
 buildpacks = [
     DockerBuildPack,
