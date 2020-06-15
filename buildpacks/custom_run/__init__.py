@@ -99,7 +99,7 @@ CMD [{% for c in command -%} "{{ c }}"{{ "," if not loop.last }} {% endfor -%}]
 
 class CustomRunBuildPack(BuildPack):
     template = TEMPLATE
-    eligible_config_filenames = {"custom-run.yaml", "custom-run.yml"}
+    eligible_config_filenames = {"custom-run.yaml", "custom_run.yaml", "custom-run.yml", "custom_run.yml"}
     _custom_run_yaml = None
 
     @property
