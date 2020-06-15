@@ -42,9 +42,6 @@ buildpacks = [
     JavaNoBuildToolBuildPack
 ]
 
-# Initialize message queue client
-client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
-
 
 def create_docker_image(gitlab_repo, commit_hash, image_name):
     # Create Docker image from git repository using jupyter-repo2docker
@@ -127,5 +124,8 @@ def handle_new_message(channel, method, properties, body):
 
 
 if __name__ == "__main__":
+    # Initialize message queue client
+    client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
+
     logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
     client.pull(handle_new_message, settings.QUEUE_NAME)
