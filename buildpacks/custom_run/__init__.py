@@ -4,8 +4,101 @@ from collections import Mapping
 from repo2docker.buildpacks.base import BuildPack
 from ruamel.yaml import YAML
 
+TEMPLATE = r"""
+FROM {{ base_image }}
+
+# Use bash as default shell, rather than sh
+ENV SHELL /bin/bash
+
+# Set up user
+ARG NB_USER
+ARG NB_UID
+ENV USER ${NB_USER}
+ENV HOME /home/${NB_USER}
+
+# Allow target path of repo that is cloned to be configurable
+ARG REPO_DIR=${HOME}
+ENV REPO_DIR ${REPO_DIR}
+WORKDIR ${REPO_DIR}
+
+RUN groupadd \
+        --gid ${NB_UID} \
+        ${NB_USER} && \
+    useradd \
+        --comment "Default user" \
+        --create-home \
+        --gid ${NB_UID} \
+        --no-log-init \
+        --shell /bin/bash \
+        --uid ${NB_UID} \
+        ${NB_USER}
+
+USER root
+COPY src/ ${REPO_DIR}
+RUN chown -R ${NB_USER}:${NB_USER} ${REPO_DIR}
+
+# We want to allow two things:
+#   1. If there's a .local/bin directory in the repo, things there
+#      should automatically be in path
+#   2. postBuild and users should be able to install things into ~/.local/bin
+#      and have them be automatically in path
+#
+# The XDG standard suggests ~/.local/bin as the path for local user-specific
+# installs. See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+ENV PATH ${HOME}/.local/bin:${REPO_DIR}/.local/bin:${PATH}
+
+{% if build_env -%}
+# Environment variables required for build
+{% for item in build_env -%}
+ENV {{item[0]}} {{item[1]}}
+{% endfor -%}
+{% endif -%}
+
+# Run assemble scripts! These will actually turn the specification
+# in the repository into an image.
+{% for sd in assemble_script_directives -%}
+{{ sd }}
+{% endfor %}
+
+{% if env -%}
+# The rest of the environment
+{% for item in env -%}
+ENV {{item[0]}} {{item[1]}}
+{% endfor -%}
+{% endif -%}
+
+# Container image Labels!
+# Put these at the end, since we don't want to rebuild everything
+# when these change! Did I mention I hate Dockerfile cache semantics?
+{% for k, v in labels|dictsort %}
+LABEL {{k}}="{{v}}"
+{%- endfor %}
+
+# We always want containers to run as non-root
+USER ${NB_USER}
+
+# Add start script
+{% if start_script is not none -%}
+RUN chmod +x "{{ start_script }}"
+ENV R2D_ENTRYPOINT "{{ start_script }}"
+{% endif -%}
+
+# Add entrypoint
+COPY /repo2docker-entrypoint /usr/local/bin/repo2docker-entrypoint
+ENTRYPOINT ["/usr/local/bin/repo2docker-entrypoint"]
+
+# Specify the default command to run
+CMD [{% for c in command -%} "{{ c }}"{{ "," if not loop.last }} {% endfor -%}]
+
+{% if appendix -%}
+# Appendix:
+{{ appendix }}
+{% endif %}
+"""
+
 
 class CustomRunBuildPack(BuildPack):
+    template = TEMPLATE
     eligible_config_filenames = {"custom-run.yaml", "custom-run.yml"}
     _custom_run_yaml = None
 
