@@ -1,4 +1,5 @@
 import os
+import shlex
 from collections import Mapping
 
 from repo2docker.buildpacks.base import BuildPack
@@ -147,7 +148,7 @@ class CustomRunBuildPack(BuildPack):
 
     def get_command(self):
         """Set user-provided run command."""
-        return self.custom_run_yaml['run']['command']
+        return shlex.split(self.custom_run_yaml['run']['command'])
 
     def detect(self):
         """Check if current repo has the config file needed to build it with the custom run BuildPack."""
