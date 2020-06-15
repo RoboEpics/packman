@@ -88,7 +88,7 @@ COPY /repo2docker-entrypoint /usr/local/bin/repo2docker-entrypoint
 ENTRYPOINT ["/usr/local/bin/repo2docker-entrypoint"]
 
 # Specify the default command to run
-CMD [{% for c in command -%} "{{ c }}"{{ "," if not loop.last }} {% endfor -%}]
+CMD [{% for c in command -%} "{{ c }}"{{ ", " if not loop.last }}{% endfor -%}]
 
 {% if appendix -%}
 # Appendix:
@@ -142,12 +142,12 @@ class CustomRunBuildPack(BuildPack):
     def get_assemble_scripts(self):
         """Add user-provided build-phase commands to parent assemble commands."""
         assemble_scripts = super().get_assemble_scripts()
-        assemble_scripts.extend(list(map(lambda c: ("root", c), self.custom_run_yaml['build'])))
+        assemble_scripts.extend(list(map(lambda c: ("root", c), self.custom_run_yaml['build']['commands'])))
         return assemble_scripts
 
     def get_command(self):
         """Set user-provided run command."""
-        return self.custom_run_yaml['run']
+        return self.custom_run_yaml['run']['command']
 
     def detect(self):
         """Check if current repo has the config file needed to build it with the custom run BuildPack."""
