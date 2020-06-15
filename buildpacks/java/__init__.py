@@ -6,6 +6,9 @@ from repo2docker.buildpacks.base import BuildPack
 
 
 class JavaNoBuildToolBuildPack(BuildPack):
+    def get_env(self):
+        return super().get_env() + [("JAVA_HOME", "/usr/java/openjdk-14"), ("PATH", "$JAVA_HOME/bin:$PATH")]
+
     def get_build_script_files(self):
         """
         Adds the JDK installer script.
