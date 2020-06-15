@@ -26,7 +26,7 @@ set -eux; \
 		*) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
 	esac; \
 	\
-	wget -sO openjdk.tgz "$downloadUrl"; \
+	wget -s -O openjdk.tgz "$downloadUrl"; \
 	echo "$downloadSha256 */openjdk.tgz" | sha256sum -c -; \
 	\
 	mkdir -p "$JAVA_HOME"; \
