@@ -11,7 +11,7 @@ class JavaNoBuildToolBuildPack(BuildPack):
         Adds the JDK installer script.
         """
         files = super().get_build_script_files()
-        files['java/install-jdk.bash'] = '/tmp/install-jdk.bash'
+        files[path.join(path.dirname(path.abspath(__file__)), 'install-jdk.bash')] = '/tmp/install-jdk.bash'
         return files
 
     def get_build_scripts(self):
@@ -62,7 +62,7 @@ class JavaNoBuildToolBuildPack(BuildPack):
         if main_class is None:
             raise RuntimeError("No file with a main method found! Aborting dockerization...")
 
-        return "java -cp out " + main_class
+        return ["java", "-cp", "out", main_class]
 
     def detect(self):
         """Check if there are any .java files in the repository."""

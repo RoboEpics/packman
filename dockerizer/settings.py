@@ -15,11 +15,9 @@ QUEUE_CLIENT = config['queue']['CLIENT']
 QUEUE_CLIENT_API_HOST = config['queue']['HOST']
 QUEUE_NAME = config['queue']['NAME']
 
-# Gitlab
-GITLAB_HOST = config['gitlab']['HOST']
-GITLAB_ADMIN_USERNAME = config['gitlab']['USERNAME']
-GITLAB_ADMIN_PASSWORD_FILE = config['gitlab']['PASSWORD_FILE']
-GITLAB_TOKEN = config['gitlab']['TOKEN']
+# Git
+GIT_HOST = config['git']['HOST']
+GIT_ADMIN_TOKEN = config['git']['ADMIN_TOKEN']
 
 # Docker Registry
 DOCKER_REGISTRY_HOST = config['registry']['HOST']
