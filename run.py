@@ -9,7 +9,6 @@ from repo2docker.buildpacks import (
     DockerBuildPack,
     JuliaProjectTomlBuildPack,
     JuliaRequireBuildPack,
-    LegacyBinderDockerBuildPack,
     NixBuildPack,
     PipfileBuildPack,
     PythonBuildPack,

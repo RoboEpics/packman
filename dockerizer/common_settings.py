@@ -13,11 +13,15 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
 
+    'rest_framework',
+
     'taggit',
 
     'authorization',
     'dataset',
-    'problem'
+    'problem',
+    'competition',
+    'leaderboard',
 ]
 
 AUTH_USER_MODEL = 'authorization.User'

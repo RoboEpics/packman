@@ -1,9 +1,15 @@
+from yaml import load, dump
+
 from django.db import models
+from django.apps import apps
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 
+from taggit.managers import TaggableManager
 from slugify import slugify
+from exclusivebooleanfield import ExclusiveBooleanField
 
 from authorization.models import get_operator_model, OperatorTypes
 from dataset.models import Dataset
@@ -30,8 +36,10 @@ class Problem(models.Model):
     is_published = models.BooleanField(default=False, editable=False)
     date_published = models.DateTimeField(null=True, blank=True, editable=False)
 
+    tags = TaggableManager()
+
     def get_slug(self):
-        return slugify(self.title)
+        return "-".join((slugify(self.title), str(self.id)))
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude)
@@ -49,6 +57,8 @@ class Submission(models.Model):
 
     reference = models.CharField(max_length=41)
     command = models.CharField(max_length=255, null=True, blank=True)
+
+    selected = ExclusiveBooleanField(on=('owner', 'problem'), default=True)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -75,11 +85,12 @@ class Submission(models.Model):
 
 class Run(models.Model):
     owner = models.ForeignKey(Operator, models.CASCADE)
-    problem = models.ForeignKey(Problem, models.CASCADE)
+    problem = models.ForeignKey(Problem, models.CASCADE)  # FIXME is this needed?
     score_definitions = models.ManyToManyField(ScoreDefinition, blank=True)
 
     class RunStatus(models.IntegerChoices):
-        WAITING_IN_QUEUE = 10, _("Waiting In Queue")
+        PREPARING = 10, _("Preparing")
+        READY = 15, _("Ready")
 
         POD_BUILD_JOB_ENQUEUED = 20, _("Pod Build Job Enqueued")
         POD_BUILD_STARTED = 30, _("Pod Build Started")
@@ -87,15 +98,74 @@ class Run(models.Model):
         POD_BUILD_FAILED = 40, _("Pod Build Failed")
         POD_BUILD_SUCCESSFUL = 50, _("Pod Build Successful")
 
-        WAITING_IN_QUEUE_FOR_RUN = 60, _("Waiting In Queue To Run")
+        WAITING_IN_QUEUE_TO_RUN = 60, _("Waiting In Queue To Run")
         RUN_INITIATED = 70, _("Run Initiated")
 
         RUN_FAILED = 80, _("Run Failed")
         RUN_SUCCESSFUL = 90, _("Run Successful")
 
-    status = models.PositiveSmallIntegerField(choices=RunStatus.choices, default=RunStatus.WAITING_IN_QUEUE)
+    status = models.PositiveSmallIntegerField(choices=RunStatus.choices, default=RunStatus.PREPARING)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
+    def save(self, **kwargs):
+        super().save(**kwargs)
+
+        if self.status == self.RunStatus.READY:
+            problem_config = load(default_storage.open(self.problem.config_file))
+            resource_limits = problem_config['resource_limits']
+
+            manifest = {
+                'apiVersion': 'hub.xerac.cloud/v1',
+                'kind': 'Room',
+                'metadata': {
+                    'name': 'room-%d' % self.id
+                },
+                'spec': {
+                    'backoff-limit': 2,
+                    'active-dead-line-seconds': 30,
+                    'id': self.id,
+                    'sketch': 'gimulator-roles',
+                    'actors': [
+                        {
+                            'name': str(gathered_submission.submission.owner),
+                            'role': 'agent',
+                            'image': '/'.join((settings.DOCKER_REGISTRY_HOST,
+                                               gathered_submission.submission.generate_image_name())),
+                            'command': gathered_submission.submission.command,
+                            'id': gathered_submission.id,
+                            'resources': {
+                                'requests': resource_limits,
+                                'limits': resource_limits
+                            }
+                        } for gathered_submission in self.gatheredsubmission_set.all()
+                    ] + [{
+                        'name': 'judge-team',
+                        'role': 'judge',
+                        'image': problem_config['components']['judge']['image'],
+                        'type': 'master',
+                        'id': self.problem_id,
+                        'resources': {
+                            'requests': resource_limits,
+                            'limits': resource_limits
+                        }
+                    }],
+                    'config-maps': [
+                        {
+                            'name': 'gimulator-roles',
+                            'data': dump(problem_config['roles'])
+                        }
+                    ]
+                }
+            }
+
+            apps.get_app_config("problem").kubernetes.create_namespaced_custom_object(
+                group="hub.xerac.cloud",
+                version="v1",
+                namespace="default",
+                plural="rooms",
+                body=manifest,
+            )
 
 
 class GatheredSubmission(models.Model):

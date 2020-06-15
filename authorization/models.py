@@ -2,9 +2,12 @@ from enum import Enum
 
 from django.db import models
 from django.contrib.auth.models import PermissionsMixin, UnicodeUsernameValidator
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.dispatch import Signal
 from django.core.exceptions import ValidationError
+
+from rest_framework.authtoken.models import Token
 
 from .utils import normalize_username
 
@@ -27,6 +30,8 @@ class Operator(models.Model):
         }
     )
 
+    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True, editable=False)
+
     def get_type(self):
         for t in OperatorTypes:
             if hasattr(self, t.value):
@@ -43,6 +48,18 @@ class Operator(models.Model):
         return self.__repr__()
 
 
+def login(user):
+    if not user.is_active:
+        raise ValidationError(_("This account is inactive."), code='inactive')
+
+    token, created = Token.objects.get_or_create(user=user)
+
+    user.last_login = now()
+    user.save()
+
+    return token.key
+
+
 class UserManager(models.Manager):
     def get(self, *args, **kwargs):
         if 'username' in kwargs:
@@ -57,20 +74,20 @@ class UserManager(models.Manager):
     def get_by_natural_key(self, username):
         return self.get(**{self.model.USERNAME_FIELD: username})
 
-    def _create_user(self, username, **extra_fields):
+    def _create_user(self, username, first_name, **extra_fields):
         username = normalize_username(username)
 
-        user = self.model(username=username, **extra_fields)
+        user = self.model(username=username, first_name=first_name, **extra_fields)
         user.save()
 
         return user
 
-    def create_user(self, username, **extra_fields):
+    def create_user(self, username, first_name, **extra_fields):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
-        return self._create_user(username, **extra_fields)
+        return self._create_user(username, first_name, **extra_fields)
 
-    def create_superuser(self, username, **extra_fields):
+    def create_superuser(self, username, first_name, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -79,14 +96,13 @@ class UserManager(models.Manager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self._create_user(username, **extra_fields)
+        return self._create_user(username, first_name, **extra_fields)
 
 
 class User(PermissionsMixin, Operator):
     first_name = models.CharField(_('first name'), max_length=30)
-    last_name = models.CharField(_('last name'), max_length=150, blank=True)
+    last_name = models.CharField(_('last name'), max_length=150, null=True, blank=True)
 
-    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True, editable=False)
     last_login = models.DateTimeField(_('last login'), blank=True, null=True, editable=False)
 
     is_staff = models.BooleanField(
@@ -142,7 +158,6 @@ class User(PermissionsMixin, Operator):
 
 class Team(Operator):
     name = models.CharField(max_length=55)
-    date_joined = models.DateTimeField(auto_now_add=True, editable=False)
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude)
@@ -161,6 +176,15 @@ class Team(Operator):
 class Member(models.Model):
     user = models.ForeignKey(User, models.CASCADE)
     team = models.ForeignKey(Team, models.CASCADE)
+
+    data_joined = models.DateTimeField(auto_now_add=True)
+
+    class MembershipStatus(models.IntegerChoices):
+        PENDING = 10, _("Pending")
+        MEMBER = 20, _("Member")
+        LEFT = 30, _("Left")
+
+    status = models.PositiveSmallIntegerField(choices=MembershipStatus.choices, default=MembershipStatus.PENDING)
 
 
 class InviteRequest(models.Model):
