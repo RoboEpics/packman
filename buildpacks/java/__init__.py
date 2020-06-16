@@ -6,30 +6,12 @@ from repo2docker.buildpacks.base import BuildPack
 
 
 class JavaNoBuildToolBuildPack(BuildPack):
+    def get_base_image(self):
+        """OpenJDK image is based on buildpack-deps image, so it's compatible with repo2docker."""
+        return "openjdk:buster"
+
     def get_env(self):
         return super().get_env() + [("JAVA_HOME", "/usr/java/openjdk-14"), ("PATH", "$JAVA_HOME/bin:$PATH")]
-
-    def get_build_script_files(self):
-        """
-        Adds the JDK installer script.
-        """
-        files = super().get_build_script_files()
-        files[path.join(path.dirname(path.abspath(__file__)), 'install-jdk.bash')] = '/tmp/install-jdk.bash'
-        return files
-
-    def get_build_scripts(self):
-        """
-        Returns the execution of the JDK installer script as root user.
-        """
-        return super().get_build_scripts() + [
-            (
-                "root",
-                r"""
-                bash /tmp/install-jdk.bash && \
-                rm /tmp/install-jdk.bash
-                """,
-            )
-        ]
 
     def get_assemble_scripts(self):
         """
