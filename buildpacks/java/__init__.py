@@ -53,7 +53,7 @@ class JavaNoBuildToolBuildPack(BuildPack):
                 content = f.read()
                 if content.find('public static void main(String[] args)') != -1:  # FIXME use regex to match arbitrary whitespaces and different method signatures
                     # Try to find the main class's package name
-                    m = re.search(r'package (?P<package_name>\w+);\s+\n', content)
+                    m = re.search(r'package (?P<package_name>\w+);\s*\n', content)  # FIXME should be checked to be at the start of the line with ^
                     package = ""
                     if m:
                         package = m.group('package_name') + '.'
