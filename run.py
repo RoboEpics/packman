@@ -27,19 +27,26 @@ from django.utils.module_loading import import_string
 
 from problem.models import Submission
 
-from buildpacks import JavaNoBuildToolBuildPack, CustomRunBuildPack
+from buildpacks import *
 
 buildpacks = [
     DockerBuildPack,
     CustomRunBuildPack,
+
     JuliaProjectTomlBuildPack,
     JuliaRequireBuildPack,
+
     NixBuildPack,
+
     RBuildPack,
+
     CondaBuildPack,
     PipfileBuildPack,
     PythonBuildPack,
-    JavaNoBuildToolBuildPack
+
+    JavaNoBuildToolBuildPack,
+
+    GoBuildPack
 ]
 
 
