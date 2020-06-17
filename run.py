@@ -70,20 +70,13 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
 def push_image_to_registry(image_name):
     password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
     if password.wait() != 0:
-        capture_exception()
-        return False
+        raise ChildProcessError("Password extraction failed!")
 
-    login = Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE)
-    if login.wait() != 0:
-        capture_exception()
-        return False
+    if Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE).wait() != 0:
+        raise ChildProcessError("Docker login failed!")
 
-    push = Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE)
-    if push.wait() != 0:
-        capture_exception()
-        return False
-
-    return True
+    if Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE).wait() != 0:
+        raise ChildProcessError("Docker push failed!")
 
 
 def handle_new_message(channel, method, properties, body):
@@ -114,16 +107,18 @@ def handle_new_message(channel, method, properties, body):
 
     # Push the image to Docker registry
     logger.debug("Pushing Docker image for submission %d..." % submission.id)
-    status = push_image_to_registry(image_name)
+    try:
+        push_image_to_registry(image_name)
 
-    if status:
         submission.status = Submission.SubmissionStatus.IMAGE_READY
         submission.save()
 
         channel.basic_ack(method.delivery_tag)
 
         logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
-    else:
+    except ChildProcessError:
+        capture_exception()
+
         submission.status = Submission.SubmissionStatus.IMAGE_PUSH_FAILED
         submission.save()
 
