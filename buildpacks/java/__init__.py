@@ -8,10 +8,7 @@ from repo2docker.buildpacks.base import BuildPack
 class JavaNoBuildToolBuildPack(BuildPack):
     def get_base_image(self):
         """OpenJDK image is based on buildpack-deps image, so it's compatible with repo2docker."""
-        return "openjdk:buster"
-
-    def get_env(self):
-        return super().get_env() + [("JAVA_HOME", "/usr/java/openjdk-14"), ("PATH", "$JAVA_HOME/bin:$PATH")]
+        return "openjdk:14-buster"
 
     def get_assemble_scripts(self):
         """
