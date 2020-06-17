@@ -6,6 +6,7 @@ djangorestframework==3.11.0
 pika==1.1.0
 Pillow==7.1.2
 psycopg2-binary==2.8.5
+python-gitlab==2.3.1
 python-slugify==4.0.0
 pytz==2020.1
 PyYaml==5.3.1

@@ -1,13 +1,15 @@
 from enum import Enum
 
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import PermissionsMixin, UnicodeUsernameValidator
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.dispatch import Signal
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from rest_framework.authtoken.models import Token
+from gitlab import Gitlab
 
 from .utils import normalize_username
 
@@ -74,22 +76,54 @@ class UserManager(models.Manager):
     def get_by_natural_key(self, username):
         return self.get(**{self.model.USERNAME_FIELD: username})
 
-    def _create_user(self, username, first_name, **extra_fields):
+    def _create_user(self, username, first_name, email, password, **extra_fields):
+        is_test = extra_fields.pop('is_test')
         username = normalize_username(username)
 
-        user = self.model(username=username, first_name=first_name, **extra_fields)
-        user.save()
+        with transaction.atomic():
+            user = self.model(username=username, first_name=first_name, **extra_fields)
+            user.save()
+
+            if settings.GITLAB_ENABLED:
+                # Create Gitlab user
+                gl = Gitlab.from_config(gitlab_id=settings.GITLAB_ID, config_files=[settings.GITLAB_CONFIG_PATH])
+                gl_user = gl.users.create({
+                    'email': email,
+                    'username': username,
+                    'password': password,
+                    'name': user.get_full_name(),
+                    'reset_password': False,
+                    'projects_limit': 0,
+                    'admin': False,
+                    'can_create_group': False,
+                    'skip_confirmation': True
+                })
+
+                if not user.is_active:
+                    gl_user.deactivate()
+
+            device = user.passworddevice_set.create(email=email)
+            device.set_password(password)
+            device.save()
+
+            if not is_test:
+                device.generate_challenge()
 
         return user
 
     def create_user(self, username, first_name, **extra_fields):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
+
+        extra_fields.setdefault('is_test', False)
+
         return self._create_user(username, first_name, **extra_fields)
 
     def create_superuser(self, username, first_name, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+
+        extra_fields.setdefault('is_test', False)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -152,8 +186,25 @@ class User(PermissionsMixin, Operator):
         return self.first_name
 
     def save(self, **kwargs):
+        # Check if activation status of the user has changed
+        activation_changed = False
+        old_obj = self.__class__.objects.only('is_active').filter(pk=getattr(self, 'pk', None)).values().first()
+        if old_obj and old_obj['is_active'] != self.is_active:
+            activation_changed = True
+
+        # Validate and save
         self.full_clean()
         super().save(**kwargs)
+
+        # Update Gitlab user's activation status if needed
+        if settings.GITLAB_ENABLED and activation_changed:
+            gl = Gitlab.from_config(gitlab_id=settings.GITLAB_ID, config_files=[settings.GITLAB_CONFIG_PATH])
+            gl_user = gl.users.list(username=self.username)[0]
+
+            if self.is_active is True:
+                gl_user.activate()
+            else:
+                gl_user.deactivate()
 
 
 class Team(Operator):
@@ -216,6 +267,7 @@ class JoinRequest(models.Model):
 def get_operator_model():
     """
     Returns the model which is the primary operator in the system.
+    FIXME Only needed for development phase because the model might change. Delete later.
     """
     return Operator
 

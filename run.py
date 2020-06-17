@@ -122,7 +122,7 @@ def handle_new_message(channel, method, properties, body):
         submission.status = Submission.SubmissionStatus.IMAGE_PUSH_FAILED
         submission.save()
 
-        logger.debug("Something went wrong while pushing Docker image for submission %d!" % submission.id)
+        logger.error("Something went wrong while pushing Docker image for submission %d!" % submission.id)
 
 
 if __name__ == "__main__":

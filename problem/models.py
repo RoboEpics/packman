@@ -1,4 +1,5 @@
 from yaml import load, dump
+import gitlab
 
 from django.db import models
 from django.apps import apps
@@ -40,6 +41,26 @@ class Problem(models.Model):
 
     def get_slug(self):
         return "-".join((slugify(self.title), str(self.id)))
+
+    def enter(self, operator):
+        """Signs the given operator into the problem."""
+
+        if settings.GITLAB_ENABLED:
+            # Create Gitlab repository in the problem group for the operator
+            gl = gitlab.Gitlab.from_config(gitlab_id=settings.GITLAB_ID, config_files=[settings.GITLAB_CONFIG_PATH])
+            gl_group = gl.groups.get(self.get_slug())
+            gl_project = gl.projects.create({
+                'name': operator.username,
+                'namespace_id': gl_group.id
+            })
+            if operator.get_type() == OperatorTypes.TEAM:
+                members = operator.team.member_set.all()
+                for member in members:
+                    gl_user = gl.users.list(username=member.user.username)[0]
+                    gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
+            elif operator.get_type() == OperatorTypes.USER:
+                gl_user = gl.users.list(username=operator.username)[0]
+                gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude)
