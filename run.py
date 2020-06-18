@@ -32,6 +32,7 @@ from buildpacks import *
 buildpacks = [
     DockerBuildPack,
     CustomRunBuildPack,
+    MakeBuildPack,
 
     JuliaProjectTomlBuildPack,
     JuliaRequireBuildPack,
