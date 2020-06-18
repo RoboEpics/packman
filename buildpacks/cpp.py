@@ -1,9 +1,9 @@
-import os
-
-from repo2docker.buildpacks.base import BuildPack
+from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin
 
 
-class CPPBuildPack(BuildPack):
+class CPPBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
+    eligible_files_pattern = r"\.cpp$"
+
     def get_base_image(self):
         """GCC image is based on buildpack-deps image, so it's compatible with repo2docker."""
         return "gcc:10"
@@ -14,20 +14,7 @@ class CPPBuildPack(BuildPack):
         """
         assemble_scripts = super().get_assemble_scripts()
         assemble_scripts.extend([
-            ("${NB_USER}", r'find -name "*.cpp" | tr "\n" " " | xargs g++ -o out')
+            ("${NB_USER}", 'mkdir bin'),
+            ("${NB_USER}", r'find -name "*.cpp" | tr "\n" " " | xargs g++ -o bin/out')
         ])
         return assemble_scripts
-
-    def get_command(self):
-        """
-        Returns the compiled file to be executed.
-        """
-        return ["./out"]
-
-    def detect(self):
-        """Check if there are any .cpp files in the repository."""
-        try:
-            next(filter(lambda x: x.endswith('.cpp'), (val for sublist in ((os.path.join(i[0], j) for j in i[2]) for i in os.walk('.')) for val in sublist)))
-            return True
-        except StopIteration:
-            return False
