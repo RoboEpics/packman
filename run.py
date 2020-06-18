@@ -68,7 +68,9 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     r2d.initialize()
     r2d.build()
 
-    return image_name
+    run_command = r2d.picked_buildpack.get_command()
+
+    return image_name, run_command
 
 
 def push_image_to_registry(image_name):
@@ -102,9 +104,10 @@ def handle_new_message(channel, method, properties, body):
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
     submission.save()
 
-    image_name = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
+    image_name, run_command = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
 
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_SUCCESSFUL
+    submission.command = ' '.join(run_command)
     submission.save()
 
     logger.debug("Successfully created Docker image for submission %d!" % submission.id)
