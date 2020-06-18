@@ -2,10 +2,12 @@ import re
 import os
 from os import path
 
-from repo2docker.buildpacks.base import BuildPack
+from buildpacks.base import BaseSimpleBuildPack
 
 
-class JavaNoBuildToolBuildPack(BuildPack):
+class JavaNoBuildToolBuildPack(BaseSimpleBuildPack):
+    eligible_files_pattern = r"\.java$"
+
     def get_base_image(self):
         """OpenJDK image is based on buildpack-deps image, so it's compatible with repo2docker."""
         return "openjdk:14-buster"
@@ -45,11 +47,3 @@ class JavaNoBuildToolBuildPack(BuildPack):
             raise RuntimeError("No file with a main method found! Aborting dockerization...")
 
         return ["java", "-cp", "out", main_class]
-
-    def detect(self):
-        """Check if there are any .java files in the repository."""
-        try:
-            next(filter(lambda x: x.endswith('.java'), (val for sublist in ((os.path.join(i[0], j) for j in i[2]) for i in os.walk('.')) for val in sublist)))
-            return True
-        except StopIteration:
-            return False

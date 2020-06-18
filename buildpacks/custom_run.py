@@ -2,7 +2,7 @@ import os
 import shlex
 from collections import Mapping
 
-from repo2docker.buildpacks.base import BuildPack
+from buildpacks.base import BaseSimpleBuildPack
 from ruamel.yaml import YAML
 
 TEMPLATE = r"""
@@ -98,7 +98,7 @@ CMD [{% for c in command -%} "{{ c }}"{{ ", " if not loop.last }}{% endfor -%}]
 """
 
 
-class CustomRunBuildPack(BuildPack):
+class CustomRunBuildPack(BaseSimpleBuildPack):
     template = TEMPLATE
     eligible_config_filenames = {"custom-run.yaml", "custom_run.yaml", "custom-run.yml", "custom_run.yml"}
     _custom_run_yaml = None
@@ -149,7 +149,3 @@ class CustomRunBuildPack(BuildPack):
     def get_command(self):
         """Set user-provided run command."""
         return shlex.split(self.custom_run_yaml['run']['command'])
-
-    def detect(self):
-        """Check if current repo has the config file needed to build it with the custom run BuildPack."""
-        return any((os.path.exists(self.binder_path(file)) for file in self.eligible_config_filenames)) and super().detect()

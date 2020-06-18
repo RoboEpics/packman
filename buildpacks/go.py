@@ -1,10 +1,12 @@
 import os
 from os import path
 
-from repo2docker.buildpacks.base import BuildPack
+from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin
 
 
-class GoBuildPack(BuildPack):
+class GoBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
+    eligible_files_pattern = r"\.go$"
+
     def get_base_image(self):
         """Golang image is based on buildpack-deps image, so it's compatible with repo2docker."""
         return "golang:buster"
@@ -27,17 +29,3 @@ class GoBuildPack(BuildPack):
             ("${NB_USER}", 'go build -o bin/out ' + main_file)
         ])
         return assemble_scripts
-
-    def get_command(self):
-        """
-        Returns the compiled file to be executed.
-        """
-        return ["./bin/out"]
-
-    def detect(self):
-        """Check if there are any .go files in the repository."""
-        try:
-            next(filter(lambda x: x.endswith('.go'), (val for sublist in ((path.join(i[0], j) for j in i[2]) for i in os.walk('.')) for val in sublist)))
-            return True
-        except StopIteration:
-            return False
