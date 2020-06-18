@@ -46,7 +46,9 @@ buildpacks = [
 
     JavaNoBuildToolBuildPack,
 
-    GoBuildPack
+    GoBuildPack,
+
+    CPPBuildPack
 ]
 
 
