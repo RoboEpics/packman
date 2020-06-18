@@ -49,6 +49,7 @@ buildpacks = [
 
     GoBuildPack,
 
+    CMakeBuildPack,
     CPPBuildPack
 ]
 
