@@ -17,7 +17,7 @@ from repo2docker.buildpacks import (
 from sentry_sdk import capture_exception
 
 logger = logging.getLogger('runner')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dockerizer.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')  # TODO change the project name to packman
 
 import django
 django.setup()
@@ -26,6 +26,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from problem.models import Submission
+from leaderboard.models import Leaderboard
 
 from buildpacks import *
 
@@ -119,6 +120,14 @@ def handle_new_message(channel, method, properties, body):
 
         submission.status = Submission.SubmissionStatus.IMAGE_READY
         submission.save()
+
+        # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
+        Leaderboard.objects.get(
+            problem_id=submission.problem_id
+        ).leaderboard_function.leaderboardtrueskillrank_set.update_or_create(
+            defaults={'mu': 25.0, 'sigma': 25 / 3},
+            owner_id=submission.owner_id
+        )
 
         channel.basic_ack(method.delivery_tag)
 

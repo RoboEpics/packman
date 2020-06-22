@@ -4,8 +4,8 @@ stages:
 deploy:
   stage: deploy
   script:
-    - cd /var/www/dockerizer-service
+    - cd /var/www/packman
     - git pull server master
-    - docker build -t localhost:5000/xerac/dockerizer --force-rm --build-arg PRODUCTION=1 .
-    - docker push localhost:5000/xerac/dockerizer
-    - kubectl rollout restart deployment/dockerizer-deployment
+    - docker build -t localhost:5000/xerac/packman --force-rm --build-arg PRODUCTION=1 .
+    - docker push localhost:5000/xerac/packman
+    - kubectl rollout restart deployment/packman
