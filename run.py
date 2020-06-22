@@ -17,7 +17,7 @@ from repo2docker.buildpacks import (
 from sentry_sdk import capture_exception
 
 logger = logging.getLogger('runner')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')  # TODO change the project name to packman
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')
 
 import django
 django.setup()
