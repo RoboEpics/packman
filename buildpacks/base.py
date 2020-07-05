@@ -13,7 +13,7 @@ class CompileBuildPackMixin:
 
 
 class BaseSimpleBuildPack(BuildPack):
-    eligible_config_filenames = {"custom-run.yaml", "custom_run.yaml", "custom-run.yml", "custom_run.yml"}
+    eligible_config_filenames = {}
 
     def detect(self):
         """Check if current repo has a config file needed to build it with this BuildPack."""

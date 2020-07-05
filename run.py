@@ -5,13 +5,11 @@ from subprocess import Popen, PIPE
 from json import loads
 from repo2docker.app import Repo2Docker
 from repo2docker.buildpacks import (
-    CondaBuildPack,
     DockerBuildPack,
     JuliaProjectTomlBuildPack,
     JuliaRequireBuildPack,
     NixBuildPack,
     PipfileBuildPack,
-    PythonBuildPack,
     RBuildPack,
 )
 from sentry_sdk import capture_exception
