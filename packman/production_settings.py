@@ -11,11 +11,11 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': config['database']['ENGINE'],
+        'ENGINE': config.get('database', 'ENGINE', fallback=None) or 'django.db.backends.postgresql',
         'HOST': os.environ.get('DATABASE_HOST', '') or config.get('database', 'HOST', fallback=None),
         'PORT': os.environ.get('DATABASE_PORT', '') or config.get('database', 'PORT', fallback=None),
-        'NAME': config['database']['NAME'],
-        'USER': os.environ.get('DATABASE_USER', '') or config['database']['USER'],
+        'NAME': config.get('database', 'NAME', fallback=None) or 'roboepics',
+        'USER': config.get('database', 'USER', fallback=None) or 'roboepics',
         'PASSWORD': os.environ.get('DATABASE_PASSWORD', '') or config['database']['PASSWORD']
     }
 }

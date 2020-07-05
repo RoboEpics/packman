@@ -8,12 +8,14 @@ if os.environ.get('PRODUCTION', '0') == '1':
 else:
     from .development_settings import *
 
-SECRET_KEY = config['security']['SECRET_KEY']
+SECRET_KEY = config['security']['PACKMAN_SECRET_KEY']
 
 # Message queue
 QUEUE_CLIENT = config['queue']['CLIENT']
-QUEUE_CLIENT_API_HOST = config['queue']['HOST']
-QUEUE_NAME = config['queue']['NAME']
+QUEUE_SERVER_HOST = os.environ.get('QUEUE_HOST', '') or config['queue']['HOST']
+QUEUE_SERVER_PASSWORD = os.environ.get('QUEUE_PASSWORD', '') or config['queue']['PASSWORD']
+QUEUE_SERVER_API_URL = f"amqp://{config['queue']['USER']}:{QUEUE_SERVER_PASSWORD}@{QUEUE_SERVER_HOST}"
+QUEUE_NAME = config['queue']['SUBMISSION_BUILDER_QUEUE_NAME']
 
 # Git
 GIT_HOST = config['git']['HOST']
@@ -50,6 +52,6 @@ LOGGING = {
 
 # Sentry
 sentry_sdk.init(
-    dsn=config['sentry']['DSN'],
+    dsn=config['sentry']['PACKMAN_DSN'],
     integrations=[DjangoIntegration()]
 )

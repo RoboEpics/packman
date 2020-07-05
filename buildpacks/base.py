@@ -32,4 +32,3 @@ class BaseSmartBuildPack(BuildPack):
             return True
         except StopIteration:
             return False
-

@@ -141,7 +141,7 @@ def handle_new_message(channel, method, properties, body):
 
 if __name__ == "__main__":
     # Initialize message queue client
-    client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_CLIENT_API_HOST)
+    client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_SERVER_API_URL)
 
     logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
     client.pull(handle_new_message, settings.QUEUE_NAME)
