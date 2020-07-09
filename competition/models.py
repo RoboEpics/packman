@@ -18,8 +18,8 @@ class Competition(models.Model):
         TEAM = 20, _("Team-Only")
         BOTH = 30, _("Individual and Team")
 
-    participation_type = models.SmallIntegerField(choices=ParticipationType.choices, default=ParticipationType.TEAM)
-    team_member_limit = models.SmallIntegerField(
+    participation_type = models.PositiveSmallIntegerField(choices=ParticipationType.choices, default=ParticipationType.BOTH)
+    team_member_limit = models.PositiveIntegerField(
         null=True,
         blank=True,
         help_text=_(
@@ -32,6 +32,11 @@ class Competition(models.Model):
         blank=True,
         help_text=_('Limit on the maximum number of participants. "null" means there is no limit!')
     )
+    daily_submission_limit = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_('Limit on the maximum number of submission per day by each participant. "null" means there is no limit!')
+    )
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
@@ -39,7 +44,7 @@ class Competition(models.Model):
 class Phase(models.Model):
     competition = models.ForeignKey(Competition, models.CASCADE)
     problems = models.ManyToManyField(Problem)
-    runs = models.ManyToManyField(Run)
+    runs = models.ManyToManyField(Run, blank=True)
 
     description = models.TextField()
     hide_until_start = models.BooleanField(default=True)
@@ -58,10 +63,17 @@ class Phase(models.Model):
 
 
 class Participant(Operator):
-    owner = models.ForeignKey(Operator, models.CASCADE, related_name='participant_owner', help_text=_("The User or Team that is submitting to this competition with this Operator."))
+    owner = models.ForeignKey(Operator, models.CASCADE, related_name='participations', help_text=_("The User or Team that is submitting to a competition with this Operator."))
     competition = models.ForeignKey(Competition, models.CASCADE)
 
     date_participated = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
         unique_together = ('owner', 'competition')
+
+    def save(self, **kwargs):  # FIXME participant shouldn't have a username
+        self.username = "Participant-" + self.owner.username
+        super().save(**kwargs)
+
+    def __str__(self):
+        return self.username

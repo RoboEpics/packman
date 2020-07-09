@@ -14,6 +14,8 @@ class Dataset(models.Model):
 
     tags = TaggableManager()
 
+    date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.full_clean()
         return super().save(force_insert, force_update, using, update_fields)

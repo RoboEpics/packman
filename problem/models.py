@@ -1,10 +1,9 @@
-from yaml import load, dump
+from yaml import safe_load, dump
 import gitlab
 
 from django.db import models
 from django.apps import apps
 from django.conf import settings
-from django.core.files.storage import default_storage
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 
@@ -45,6 +44,8 @@ class Problem(models.Model):
     def enter(self, operator):
         """Signs the given operator into the problem."""
 
+        self.submitters.create(operator=operator)
+
         if settings.GITLAB_ENABLED:
             # Create Gitlab repository in the problem group for the operator
             gl = gitlab.Gitlab.from_config(gitlab_id=settings.GITLAB_ID, config_files=[settings.GITLAB_CONFIG_PATH])
@@ -70,6 +71,13 @@ class Problem(models.Model):
     def save(self, **kwargs):
         self.full_clean()
         super().save(**kwargs)
+
+
+class ProblemEnter(models.Model):
+    operator = models.ForeignKey(Operator, models.CASCADE, related_name='problems_entered')
+    problem = models.ForeignKey(Problem, models.CASCADE, related_name='submitters')
+
+    date_entered = models.DateTimeField(auto_now_add=True)
 
 
 class Submission(models.Model):
@@ -133,50 +141,81 @@ class Run(models.Model):
         super().save(**kwargs)
 
         if self.status == self.RunStatus.READY:
-            problem_config = load(default_storage.open(self.problem.config_file))
+            problem_config = safe_load(self.problem.config_file.read())
             resource_limits = problem_config['resource_limits']
 
+            # manifest = {
+            #     'apiVersion': 'hub.xerac.cloud/v1',
+            #     'kind': 'Room',
+            #     'metadata': {
+            #         'name': 'room-%d' % self.id,
+            #         'namespace': 'hub-system'
+            #     },
+            #     'spec': {
+            #         'backoff-limit': 2,
+            #         'active-dead-line-seconds': 30,
+            #         'id': self.id,
+            #         'sketch': 'gimulator-roles',
+            #         'actors': [
+            #             {
+            #                 'name': str(gathered_submission.submission.owner),
+            #                 'role': 'agent',
+            #                 'image': '/'.join((settings.DOCKER_REGISTRY_HOST,
+            #                                    gathered_submission.submission.generate_image_name())),
+            #                 'command': gathered_submission.submission.command,
+            #                 'id': gathered_submission.id,
+            #                 'resources': {
+            #                     'requests': resource_limits,
+            #                     'limits': resource_limits
+            #                 }
+            #             } for gathered_submission in self.gatheredsubmission_set.all()
+            #         ] + [
+            #             {
+            #                 'name': 'judge-team',
+            #                 'role': 'judge',
+            #                 'image': component['image'],
+            #                 'command': component['command'],
+            #                 'type': 'master',
+            #                 'id': self.problem_id,
+            #                 'resources': {
+            #                     'requests': resource_limits,
+            #                     'limits': resource_limits
+            #                 }
+            #             } for name, component in problem_config['components'].items()
+            #         ],
+            #         'config-maps': [
+            #             {
+            #                 'name': 'gimulator-roles',
+            #                 'data': dump(problem_config['roles'])
+            #             }
+            #         ]
+            #     }
+            # }
+
+            gathered_submission = self.gatheredsubmission_set.first()
             manifest = {
                 'apiVersion': 'hub.xerac.cloud/v1',
-                'kind': 'Room',
+                'kind': 'ML',
                 'metadata': {
-                    'name': 'room-%d' % self.id
+                    'name': 'ml-%d' % self.id,
+                    'namespace': 'hub-system'
                 },
                 'spec': {
-                    'backoff-limit': 2,
-                    'active-dead-line-seconds': 30,
-                    'id': self.id,
-                    'sketch': 'gimulator-roles',
-                    'actors': [
-                        {
-                            'name': str(gathered_submission.submission.owner),
-                            'role': 'agent',
-                            'image': '/'.join((settings.DOCKER_REGISTRY_HOST,
-                                               gathered_submission.submission.generate_image_name())),
-                            'command': gathered_submission.submission.command,
-                            'id': gathered_submission.id,
-                            'resources': {
-                                'requests': resource_limits,
-                                'limits': resource_limits
-                            }
-                        } for gathered_submission in self.gatheredsubmission_set.all()
-                    ] + [{
-                        'name': 'judge-team',
-                        'role': 'judge',
-                        'image': problem_config['components']['judge']['image'],
-                        'type': 'master',
-                        'id': self.problem_id,
-                        'resources': {
-                            'requests': resource_limits,
-                            'limits': resource_limits
-                        }
-                    }],
-                    'config-maps': [
-                        {
-                            'name': 'gimulator-roles',
-                            'data': dump(problem_config['roles'])
-                        }
-                    ]
+                    'run-id': self.id,
+                    'submission-id': gathered_submission.id,
+
+                    'evaluator-image': problem_config['components']['judge']['image'],
+                    'submission-image': '/'.join((settings.DOCKER_REGISTRY_HOST, gathered_submission.submission.generate_image_name())),
+
+                    'cpu-resource-request': resource_limits['cpu'],
+                    'memory-resource-request': resource_limits['memory'],
+                    'ephemeral-resource-request': resource_limits['ephemeral'],
+
+                    'cpu-resource-limit': resource_limits['cpu'],
+                    'memory-resource-limit': resource_limits['memory'],
+                    'ephemeral-resource-limit': resource_limits['ephemeral'],
+
+                    'backoff-limit': 2
                 }
             }
 

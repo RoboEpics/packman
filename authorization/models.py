@@ -41,13 +41,13 @@ class Operator(models.Model):
 
     def get_display_name(self):
         operator_type = self.get_type().value
-        return "%s: %s" % (operator_type.title(), str(getattr(self, operator_type)))
+        return "%s: %s" % (operator_type.title(), self.username)
 
     def __repr__(self):
         return self.get_display_name()
 
     def __str__(self):
-        return self.__repr__()
+        return self.username
 
 
 def login(user):
@@ -77,7 +77,7 @@ class UserManager(models.Manager):
         return self.get(**{self.model.USERNAME_FIELD: username})
 
     def _create_user(self, username, first_name, email, password, **extra_fields):
-        is_test = extra_fields.pop('is_test')
+        is_test = extra_fields.pop('is_test', False)
         username = normalize_username(username)
 
         with transaction.atomic():
