@@ -23,7 +23,7 @@ django.setup()
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from problem.models import Submission
+from problem.models import Submission, Run
 from leaderboard.models import Leaderboard
 
 from buildpacks import *
@@ -38,11 +38,11 @@ buildpacks = [
 
     NixBuildPack,
 
-    RBuildPack,
-
     CondaBuildPack,
     PipfileBuildPack,
     PythonBuildPack,
+
+    RBuildPack,
 
     JavaNoBuildToolBuildPack,
 
@@ -119,6 +119,10 @@ def handle_new_message(channel, method, properties, body):
         submission.status = Submission.SubmissionStatus.IMAGE_READY
         submission.save()
 
+        channel.basic_ack(method.delivery_tag)
+
+        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
+
         # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
         Leaderboard.objects.get(
             problem_id=submission.problem_id
@@ -127,9 +131,11 @@ def handle_new_message(channel, method, properties, body):
             owner_id=submission.owner_id
         )
 
-        channel.basic_ack(method.delivery_tag)
-
-        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
+        # Create Run object right after the submission build was successful
+        run = Run.objects.create(owner=submission.owner, problem=submission.problem)
+        run.gatheredsubmission_set.create(submission=submission)
+        run.status = Run.RunStatus.READY
+        run.save()
     except ChildProcessError:
         capture_exception()
 
