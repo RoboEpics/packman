@@ -4,6 +4,6 @@ stages:
 deploy:
   stage: deploy
   script:
-    - docker build -t registry.syfract.com/roboepics/packman --force-rm --build-arg PRODUCTION=1 .
+    - docker build -t registry.syfract.com/roboepics/packman --build-arg PRODUCTION=1 .
     - docker push registry.syfract.com/roboepics/packman
-    - kubectl rollout restart deployment/roboepics-packman
+    - kubectl --kubeconfig=$HOME/.kube/config-dknext rollout restart deployment/roboepics-packman
