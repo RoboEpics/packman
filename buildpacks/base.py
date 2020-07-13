@@ -1,7 +1,7 @@
 from os import path, walk
 from re import search
 
-from repo2docker.buildpacks.base import BuildPack
+from repo2docker.buildpacks.base import BaseImage
 
 
 def filter_files(pattern):
@@ -41,9 +41,9 @@ class DetectByFilenamePatternMixin:
         return any(filter_files(self.eligible_filename_pattern))
 
 
-class BaseSimpleBuildPack(DetectByConfigFileMixin, BuildPack):
+class BaseSimpleBuildPack(DetectByConfigFileMixin, BaseImage):
     pass
 
 
-class BaseSmartBuildPack(DetectByFilenamePatternMixin, BuildPack):
+class BaseSmartBuildPack(DetectByFilenamePatternMixin, BaseImage):
     pass
