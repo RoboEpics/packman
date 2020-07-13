@@ -4,6 +4,19 @@ from re import search
 from repo2docker.buildpacks.base import BuildPack
 
 
+def filter_files(pattern):
+    return filter(lambda x: search(pattern, x) is not None, (
+        val for sublist in ((path.join(i[0], j) for j in i[2]) for i in walk('.')) for val in sublist
+    ))
+
+
+def find_first_file_by_pattern(pattern):
+    try:
+        return next(filter_files(pattern))
+    except StopIteration:
+        return None
+
+
 class CompileBuildPackMixin:
     def get_command(self):
         """
@@ -25,9 +38,7 @@ class DetectByFilenamePatternMixin:
 
     def detect(self):
         """Check if there are any eligible files in the repository."""
-        return any(filter(lambda x: search(self.eligible_filename_pattern, x) is not None, (
-            val for sublist in ((path.join(i[0], j) for j in i[2]) for i in walk('.')) for val in sublist
-        )))
+        return any(filter_files(self.eligible_filename_pattern))
 
 
 class BaseSimpleBuildPack(DetectByConfigFileMixin, BuildPack):

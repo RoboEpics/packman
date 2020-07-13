@@ -1,7 +1,4 @@
-import os
-from os import path
-
-from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin
+from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin, filter_files
 
 
 class GoBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
@@ -16,7 +13,7 @@ class GoBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
         Gets the list of all the .go files and tries to compile them.
         """
         main_file = None
-        for file in filter(lambda x: x.endswith('.go'), (val for sublist in ((path.join(i[0], j) for j in i[2]) for i in os.walk('.')) for val in sublist)):
+        for file in filter_files(self.eligible_filename_pattern):
             with open(file) as f:
                 content = f.read()
                 if content.find('package main') != -1 and content.find('func main()') != -1:

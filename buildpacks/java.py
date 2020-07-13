@@ -1,8 +1,7 @@
 import re
-import os
 from os import path
 
-from buildpacks.base import BaseSmartBuildPack
+from buildpacks.base import BaseSmartBuildPack, filter_files
 
 
 class JavaNoBuildToolBuildPack(BaseSmartBuildPack):
@@ -29,7 +28,7 @@ class JavaNoBuildToolBuildPack(BaseSmartBuildPack):
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
         main_class = None
-        for file in filter(lambda x: x.endswith('.java'), (val for sublist in ((os.path.join(i[0], j) for j in i[2]) for i in os.walk('.')) for val in sublist)):
+        for file in filter_files(self.eligible_filename_pattern):
             with open(file) as f:
                 content = f.read()
                 if content.find('public static void main(String[] args)') != -1:  # FIXME use regex to match arbitrary whitespaces and different method signatures
