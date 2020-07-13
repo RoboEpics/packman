@@ -40,6 +40,7 @@ buildpacks = [
 
     RBuildPack,
 
+    IPythonNotebookBuildPack,
     CondaBuildPack,
     PipfileBuildPack,
     PythonBuildPack,
