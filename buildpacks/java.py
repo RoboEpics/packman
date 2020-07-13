@@ -2,11 +2,11 @@ import re
 import os
 from os import path
 
-from buildpacks.base import BaseSimpleBuildPack
+from buildpacks.base import BaseSmartBuildPack
 
 
-class JavaNoBuildToolBuildPack(BaseSimpleBuildPack):
-    eligible_files_pattern = r"\.java$"
+class JavaNoBuildToolBuildPack(BaseSmartBuildPack):
+    eligible_filename_pattern = r"\.java$"
 
     def get_base_image(self):
         """OpenJDK image is based on buildpack-deps image, so it's compatible with repo2docker."""

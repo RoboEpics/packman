@@ -38,11 +38,11 @@ buildpacks = [
 
     NixBuildPack,
 
+    RBuildPack,
+
     CondaBuildPack,
     PipfileBuildPack,
     PythonBuildPack,
-
-    RBuildPack,
 
     JavaNoBuildToolBuildPack,
 

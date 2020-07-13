@@ -2,7 +2,7 @@ from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin
 
 
 class CPPBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
-    eligible_files_pattern = r"\.cpp$"
+    eligible_filename_pattern = r"\.cpp$"
 
     def get_base_image(self):
         """GCC image is based on buildpack-deps image, so it's compatible with repo2docker."""

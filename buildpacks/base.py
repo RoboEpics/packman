@@ -12,23 +12,27 @@ class CompileBuildPackMixin:
         return ["./bin/out"]
 
 
-class BaseSimpleBuildPack(BuildPack):
-    eligible_config_filenames = {}
+class DetectByConfigFileMixin:
+    eligible_config_filenames = set()
 
     def detect(self):
         """Check if current repo has a config file needed to build it with this BuildPack."""
-        return any((path.exists(self.binder_path(file)) for file in self.eligible_config_filenames)) and super().detect()
+        return any((path.exists(self.binder_path(file)) for file in self.eligible_config_filenames))
 
 
-class BaseSmartBuildPack(BuildPack):
-    eligible_files_pattern = ""
+class DetectByFilenamePatternMixin:
+    eligible_filename_pattern = ""
 
     def detect(self):
         """Check if there are any eligible files in the repository."""
-        try:
-            next(filter(lambda x: search(self.eligible_files_pattern, x) is not None, (
-                val for sublist in ((path.join(i[0], j) for j in i[2]) for i in walk('.')) for val in sublist
-            )))
-            return True
-        except StopIteration:
-            return False
+        return any(filter(lambda x: search(self.eligible_filename_pattern, x) is not None, (
+            val for sublist in ((path.join(i[0], j) for j in i[2]) for i in walk('.')) for val in sublist
+        )))
+
+
+class BaseSimpleBuildPack(DetectByConfigFileMixin, BuildPack):
+    pass
+
+
+class BaseSmartBuildPack(DetectByFilenamePatternMixin, BuildPack):
+    pass

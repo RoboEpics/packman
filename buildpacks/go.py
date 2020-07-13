@@ -5,7 +5,7 @@ from buildpacks.base import BaseSmartBuildPack, CompileBuildPackMixin
 
 
 class GoBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
-    eligible_files_pattern = r"\.go$"
+    eligible_filename_pattern = r"\.go$"
 
     def get_base_image(self):
         """Golang image is based on buildpack-deps image, so it's compatible with repo2docker."""
