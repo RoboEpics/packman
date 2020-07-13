@@ -6,6 +6,6 @@ deploy:
   script:
     - cd /var/www/packman
     - git pull server master
-    - docker build -t localhost:5000/xerac/packman --force-rm --build-arg PRODUCTION=1 .
-    - docker push localhost:5000/xerac/packman
+    - docker build -t registry.syfract.com/roboepics/packman --force-rm --build-arg PRODUCTION=1 .
+    - docker push registry.syfract.com/roboepics/packman
     - kubectl rollout restart deployment/packman
