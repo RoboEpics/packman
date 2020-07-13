@@ -4,8 +4,6 @@ stages:
 deploy:
   stage: deploy
   script:
-    - cd /var/www/packman
-    - git pull server master
     - docker build -t registry.syfract.com/roboepics/packman --force-rm --build-arg PRODUCTION=1 .
     - docker push registry.syfract.com/roboepics/packman
-    - kubectl rollout restart deployment/packman
+    - kubectl rollout restart deployment/roboepics-packman
