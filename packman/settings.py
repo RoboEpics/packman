@@ -13,8 +13,9 @@ SECRET_KEY = config['security']['PACKMAN_SECRET_KEY']
 # Message queue
 QUEUE_CLIENT = config['queue']['CLIENT']
 QUEUE_SERVER_HOST = os.environ.get('QUEUE_HOST', '') or config['queue']['HOST']
-QUEUE_SERVER_PASSWORD = os.environ.get('QUEUE_PASSWORD', '') or config['queue']['PASSWORD']
-QUEUE_SERVER_API_URL = f"amqp://{config['queue']['USER']}:{QUEUE_SERVER_PASSWORD}@{QUEUE_SERVER_HOST}"
+QUEUE_SERVER_USERNAME = os.environ.get('QUEUE_USERNAME', '') or config.get('queue', 'USERNAME', fallback=None)
+QUEUE_SERVER_PASSWORD = os.environ.get('QUEUE_PASSWORD', '') or config.get('queue', 'PASSWORD', fallback=None)
+QUEUE_SERVER_API_URL = f"amqp://{'%s:%s@'% (QUEUE_SERVER_USERNAME, QUEUE_SERVER_PASSWORD) if QUEUE_SERVER_USERNAME else ''}{QUEUE_SERVER_HOST}"
 QUEUE_NAME = config['queue']['SUBMISSION_BUILDER_QUEUE_NAME']
 
 # Git
