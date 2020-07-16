@@ -12,7 +12,6 @@ RUN apt-get -q update && apt-get -qqy install docker-ce-cli && rm -rf /var/lib/a
 
 ENV PYTHONUNBUFFERED 1
 
-RUN mkdir /code
 WORKDIR /code
 
 COPY requirements.txt /code/

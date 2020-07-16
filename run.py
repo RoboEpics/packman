@@ -74,12 +74,12 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
 
 
 def push_image_to_registry(image_name):
-    password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
-    if password.wait() != 0:
-        raise ChildProcessError("Password extraction failed!")
-
-    if Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE).wait() != 0:
-        raise ChildProcessError("Docker login failed!")
+    # password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
+    # if password.wait() != 0:
+    #     raise ChildProcessError("Password extraction failed!")
+    #
+    # if Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE).wait() != 0:
+    #     raise ChildProcessError("Docker login failed!")
 
     if Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE).wait() != 0:
         raise ChildProcessError("Docker push failed!")
