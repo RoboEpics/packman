@@ -141,6 +141,7 @@ def handle_new_message(channel, method, properties, body):
         # Create Run object right after the submission build was successful
         run = Run.objects.create(owner=submission.owner, problem=submission.problem)
         run.gatheredsubmission_set.create(submission=submission)
+        run.score_definitions.add(1)  # FIXME
         run.status = Run.RunStatus.READY
         run.save()
     except ChildProcessError:
