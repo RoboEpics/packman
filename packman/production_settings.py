@@ -9,6 +9,7 @@ ADMINS = [
 ]
 MANAGERS = ADMINS
 
+# Database
 DATABASES = {
     'default': {
         'ENGINE': config.get('database', 'ENGINE', fallback=None) or 'django.db.backends.postgresql',
@@ -19,3 +20,12 @@ DATABASES = {
         'PASSWORD': os.environ.get('DATABASE_PASSWORD', '') or config['database']['PASSWORD']
     }
 }
+
+# S3 storage
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY', '') or config['s3']['ACCESS_KEY']
+AWS_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_KEY', '') or config['s3']['SECRET_KEY']
+AWS_S3_ENDPOINT_URL = os.environ.get('S3_HOST', '') or config['s3']['HOST']
+AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', '') or config['s3']['BUCKET_NAME']
+AWS_DEFAULT_ACL = config.get('s3', 'DEFAULT_ACL', fallback=None)
+AWS_S3_FILE_OVERWRITE = False
