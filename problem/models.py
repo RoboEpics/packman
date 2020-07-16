@@ -211,6 +211,9 @@ class Run(models.Model):
                     'evaluator-image': problem_config['components']['judge']['image'],
                     'submission-image': '/'.join((settings.DOCKER_REGISTRY_HOST, gathered_submission.submission.generate_image_name())),
 
+                    'data-persist-volume-claim-name': 'diginext-train-data',
+                    'evaluation-persist-volume-claim-name': 'diginext-evaluation-data',
+
                     'cpu-resource-request': resource_limits['cpu'],
                     'memory-resource-request': resource_limits['memory'],
                     'ephemeral-resource-request': resource_limits['ephemeral'],
