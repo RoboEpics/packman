@@ -227,7 +227,7 @@ class Run(models.Model):
                 group="hub.xerac.cloud",
                 version="v1",
                 namespace="hub-system",
-                plural="rooms",
+                plural="mls",
                 body=manifest,
             )
 
