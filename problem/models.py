@@ -33,6 +33,7 @@ class Problem(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True)
 
+    is_public = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False, editable=False)
     date_published = models.DateTimeField(null=True, blank=True, editable=False)
 
@@ -54,12 +55,15 @@ class Problem(models.Model):
                 'name': operator.username,
                 'namespace_id': gl_group.id
             })
+            if operator.get_type() == OperatorTypes.PARTICIPANT:
+                operator = operator.participant.owner
+
             if operator.get_type() == OperatorTypes.TEAM:
                 members = operator.team.member_set.all()
                 for member in members:
                     gl_user = gl.users.list(username=member.user.username)[0]
                     gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
-            elif operator.get_type() == OperatorTypes.USER:
+            else:
                 gl_user = gl.users.list(username=operator.username)[0]
                 gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
 

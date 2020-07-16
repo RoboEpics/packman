@@ -12,6 +12,8 @@ class Dataset(models.Model):
     subtitle = models.CharField(max_length=100, null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
+    is_public = models.BooleanField(default=False)
+
     tags = TaggableManager()
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)

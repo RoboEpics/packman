@@ -5,7 +5,7 @@ from authorization.models import Operator
 
 class Leaderboard(models.Model):
     problem = models.ForeignKey('problem.Problem', models.CASCADE)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=100)
 
 
 class TrueSkillLeaderboard(Leaderboard):  # TODO migrate this to MongoDB

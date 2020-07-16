@@ -37,6 +37,7 @@ class Competition(models.Model):
         blank=True,
         help_text=_('Limit on the maximum number of submission per day by each participant. "null" means there is no limit!')
     )
+    is_public = models.BooleanField(default=False)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
