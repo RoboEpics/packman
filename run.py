@@ -9,8 +9,7 @@ from repo2docker.buildpacks import (
     JuliaProjectTomlBuildPack,
     JuliaRequireBuildPack,
     NixBuildPack,
-    PipfileBuildPack,
-    RBuildPack,
+    PipfileBuildPack
 )
 from sentry_sdk import capture_exception
 
@@ -24,7 +23,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from problem.models import Submission, Run
-from leaderboard.models import SimpleLeaderboard
+# from leaderboard.models import SimpleLeaderboard
 
 from buildpacks import *
 
@@ -77,7 +76,7 @@ def push_image_to_registry(image_name):
     # password = Popen(('cat', settings.DOCKER_REGISTRY_PASSWORD_FILE), stdout=PIPE)
     # if password.wait() != 0:
     #     raise ChildProcessError("Password extraction failed!")
-    #
+
     # if Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE).wait() != 0:
     #     raise ChildProcessError("Docker login failed!")
 
