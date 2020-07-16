@@ -226,7 +226,7 @@ class Run(models.Model):
             apps.get_app_config("problem").kubernetes.create_namespaced_custom_object(
                 group="hub.xerac.cloud",
                 version="v1",
-                namespace="default",
+                namespace="hub-system",
                 plural="rooms",
                 body=manifest,
             )
