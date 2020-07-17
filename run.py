@@ -117,6 +117,7 @@ def handle_new_message(channel, method, properties, body):
         push_image_to_registry(image_name)
 
         submission.status = Submission.SubmissionStatus.IMAGE_READY
+        submission.selected = True
         submission.save()
 
         channel.basic_ack(method.delivery_tag)
