@@ -52,6 +52,9 @@ buildpacks = [
     CPPBuildPack
 ]
 
+# Initialize message queue client
+client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_SERVER_API_URL)
+
 
 def create_docker_image(gitlab_repo, commit_hash, image_name):
     # Create Docker image from git repository using jupyter-repo2docker
@@ -86,17 +89,18 @@ def push_image_to_registry(image_name):
         raise ChildProcessError("Docker push failed!")
 
 
-def handle_new_message(channel, method, properties, body):
+def handle_new_message(result):
     logger.info("Received new message from queue...")
 
-    request = loads(body)
+    request = loads(result['body'])
     logger.debug("Message content: %s" % str(request))
 
     try:
         submission = Submission.objects.get(id=request['submission_id'])
     except Submission.DoesNotExist:
         logger.warning("No submission with the given exists! Dropping message from queue...")
-        channel.basic_ack(method.delivery_tag)
+        # channel.basic_ack(method.delivery_tag)
+        client.delete(result)
         return
 
     # Create Docker image from Gitlab repository
@@ -114,7 +118,8 @@ def handle_new_message(channel, method, properties, body):
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_FAILED
         submission.save()
 
-        channel.basic_ack(method.delivery_tag)
+        # channel.basic_ack(method.delivery_tag)
+        client.delete(result)
 
         return
 
@@ -132,8 +137,6 @@ def handle_new_message(channel, method, properties, body):
         submission.status = Submission.SubmissionStatus.IMAGE_READY
         submission.selected = True
         submission.save()
-
-        channel.basic_ack(method.delivery_tag)
 
         logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
 
@@ -157,6 +160,9 @@ def handle_new_message(channel, method, properties, body):
         run.score_definitions.add(1)  # FIXME
         run.status = Run.RunStatus.READY
         run.save()
+
+        # channel.basic_ack(method.delivery_tag)
+        client.delete(result)
     except ChildProcessError:
         capture_exception()
 
@@ -167,8 +173,5 @@ def handle_new_message(channel, method, properties, body):
 
 
 if __name__ == "__main__":
-    # Initialize message queue client
-    client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_SERVER_API_URL)
-
     logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
     client.pull(handle_new_message, settings.QUEUE_NAME)
