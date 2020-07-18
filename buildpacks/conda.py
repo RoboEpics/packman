@@ -10,7 +10,7 @@ class PythonRunCommandDetectorMixin:
         """
         main_file = None
         print(list(filter_files(r"\.py$")))
-        print(list(filter_files(r"*")))
+        print(list(filter_files(r".*")))
         for file in filter_files(r"\.py$"):
             with open(file) as f:
                 content = f.read()
