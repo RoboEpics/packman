@@ -12,7 +12,7 @@ class PythonRunCommandDetectorMixin:
         for file in filter_files(r"\.py$"):
             with open(file) as f:
                 content = f.read()
-                if content.find('if __name__ == "__main"') != -1:  # FIXME use regex to match arbitrary whitespaces and different method signatures
+                if content.find('if __name__ == "__main__"') != -1:  # FIXME use regex to match arbitrary whitespaces and different method signatures
                     main_file = file
                     break
 
