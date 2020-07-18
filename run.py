@@ -63,11 +63,13 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     r2d.user_id = 2000
     r2d.user_name = 'jovyan'
     r2d.buildpacks = buildpacks
+    r2d.default_buildpack = PythonBuildPack
 
     r2d.initialize()
     r2d.build()
 
-    run_command = r2d.picked_buildpack.get_command()
+    # run_command = r2d.picked_buildpack.get_command()
+    run_command = None
 
     return image_name, run_command
 
@@ -103,10 +105,21 @@ def handle_new_message(channel, method, properties, body):
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
     submission.save()
 
-    image_name, run_command = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
+    try:
+        image_name, run_command = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
+    except Exception:
+        capture_exception()
+        logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
+
+        submission.status = Submission.SubmissionStatus.IMAGE_BUILD_FAILED
+        submission.save()
+
+        channel.basic_ack(method.delivery_tag)
+
+        return
 
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_SUCCESSFUL
-    submission.command = ' '.join(run_command)
+    # submission.command = ' '.join(run_command)
     submission.save()
 
     logger.debug("Successfully created Docker image for submission %d!" % submission.id)
