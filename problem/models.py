@@ -234,6 +234,9 @@ class Run(models.Model):
                 body=manifest,
             )
 
+            self.status = self.RunStatus.POD_BUILD_JOB_ENQUEUED
+            super().save(**kwargs)
+
 
 class GatheredSubmission(models.Model):
     submission = models.ForeignKey(Submission, models.CASCADE)

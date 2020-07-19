@@ -174,4 +174,10 @@ def handle_new_message(result):
 
 if __name__ == "__main__":
     logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
-    client.pull(handle_new_message, settings.QUEUE_NAME)
+    while True:
+        try:
+            client.pull(handle_new_message, settings.QUEUE_NAME)
+        except Exception as e:
+            capture_exception()
+
+            logger.error('FATAL:', str(e))
