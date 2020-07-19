@@ -1,3 +1,5 @@
+from re import search
+
 from repo2docker.buildpacks.conda import CondaBuildPack
 
 from .base import filter_files
@@ -12,7 +14,7 @@ class PythonRunCommandDetectorMixin:
         for file in filter_files(r"\.py$"):
             with open(file) as f:
                 content = f.read()
-                if content.find('if __name__ == "__main__"') != -1:  # FIXME use regex to match arbitrary whitespaces and different method signatures
+                if search(r"^if\s+__name__\s*==\s*[\"']__main__[\"']\s*:", content) is not None:
                     main_file = file
                     break
 
