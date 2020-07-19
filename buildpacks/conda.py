@@ -1,4 +1,4 @@
-from re import search
+from re import search, MULTILINE
 
 from repo2docker.buildpacks.conda import CondaBuildPack
 
@@ -14,7 +14,7 @@ class PythonRunCommandDetectorMixin:
         for file in filter_files(r"\.py$"):
             with open(file) as f:
                 content = f.read()
-                if search(r"^if\s+__name__\s*==\s*[\"']__main__[\"']\s*:", content) is not None:
+                if search(r"^if\s+__name__\s*==\s*[\"']__main__[\"']\s*:", content, flags=MULTILINE) is not None:
                     main_file = file
                     break
 
