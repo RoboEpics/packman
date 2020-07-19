@@ -139,30 +139,6 @@ def handle_new_message(result):
         submission.save()
 
         logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
-
-        # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
-        # Leaderboard.objects.get(
-        #     problem_id=submission.problem_id
-        # ).leaderboard_function.leaderboardtrueskillrank_set.update_or_create(
-        #     defaults={'mu': 25.0, 'sigma': 25 / 3},
-        #     owner_id=submission.owner_id
-        # )
-        # SimpleLeaderboard.objects.get(
-        #     problem_id=submission.problem_id
-        # ).simpleleaderboardrank_set.update_or_create(
-        #     defaults={'precision': 0},
-        #     owner_id=submission.owner_id
-        # )
-
-        # Create Run object right after the submission build was successful
-        run = Run.objects.create(owner=submission.owner, problem=submission.problem)
-        run.gatheredsubmission_set.create(submission=submission)
-        run.score_definitions.add(1)  # FIXME
-        run.status = Run.RunStatus.READY
-        run.save()
-
-        # channel.basic_ack(method.delivery_tag)
-        client.delete(result)
     except ChildProcessError:
         capture_exception()
 
@@ -171,13 +147,41 @@ def handle_new_message(result):
 
         logger.error("Something went wrong while pushing Docker image for submission %d!" % submission.id)
 
+        return
+
+    # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
+    # Leaderboard.objects.get(
+    #     problem_id=submission.problem_id
+    # ).leaderboard_function.leaderboardtrueskillrank_set.update_or_create(
+    #     defaults={'mu': 25.0, 'sigma': 25 / 3},
+    #     owner_id=submission.owner_id
+    # )
+    # SimpleLeaderboard.objects.get(
+    #     problem_id=submission.problem_id
+    # ).simpleleaderboardrank_set.update_or_create(
+    #     defaults={'precision': 0},
+    #     owner_id=submission.owner_id
+    # )
+
+    try:
+        # Create Run object right after the submission build was successful
+        run = Run.objects.create(owner=submission.owner, problem=submission.problem)
+        run.gatheredsubmission_set.create(submission=submission)
+        run.score_definitions.add(1)  # FIXME
+        run.status = Run.RunStatus.READY
+        run.save()
+    except Exception as e:
+        capture_exception()
+
+        logger.error("Something went wrong while creating run object for submission %d!" % submission.id)
+        logger.error(str(e))
+
+        return
+
+    # channel.basic_ack(method.delivery_tag)
+    client.delete(result)
+
 
 if __name__ == "__main__":
     logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
-    while True:
-        try:
-            client.pull(handle_new_message, settings.QUEUE_NAME)
-        except Exception as e:
-            capture_exception()
-
-            logger.error('FATAL:', str(e))
+    client.pull(handle_new_message, settings.QUEUE_NAME)
