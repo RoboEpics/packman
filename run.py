@@ -98,7 +98,10 @@ def handle_new_message(result):
     try:
         submission = Submission.objects.get(id=request['submission_id'])
     except Submission.DoesNotExist:
-        logger.warning("No submission with the given exists! Dropping message from queue...")
+        capture_exception()
+
+        logger.error("No submission with the given id exists! Dropping message from queue...")
+
         # channel.basic_ack(method.delivery_tag)
         client.delete(result)
         return
