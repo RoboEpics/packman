@@ -11,6 +11,7 @@ Packman is a service that takes codes and turns them into Docker images in a sma
   - [Dockerfile](#dockerfile)
   - [Custom Run](#custom-run)
   - [Makefile](#makefile)
+  - [IPython/Jupyter Notebook](#ipython-jupyter-notebook)
   - [Python](#python)
   - [Java (without build tools)](#java-without-build-tools)
   - [Go](#go)
@@ -76,6 +77,17 @@ run:
 
 If a `Makefile` exists in the root of your code, a plain `make` command will be run in the root of your code.
 It expects an executable file to be created in the path `./bin/out` and to be the run command for the code.
+
+### IPython/Jupyter Notebook
+If your code repository contains a single notebook file (.ipynb), the code blocks in your notebook will be executed
+sequentially.
+
+Note: To install your dependencies, you need to use IPython magic commands. For example:
+
+```jupyter
+%pip install numpy
+import numpy as np
+```
 
 ### Python
 
