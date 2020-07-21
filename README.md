@@ -91,6 +91,16 @@ import numpy as np
 
 ### Python
 
+This buildpack will be selected if there is a `requirements.txt` or `runtime.txt` file in the root of your code.
+
+For the run phase, it expects exactly one `.py` file in your project repository that contains the Python main file (top-level scope) check:
+
+```python
+if __name__ == "__main__":
+```
+
+### R
+
 **_Under maintenance_**
 
 ### Java (without build tools)
@@ -149,6 +159,10 @@ g++ -o bin/out <.cpp file> [<.cpp file> ...]
 Note: The official GCC compiler with the latest patch version of 10 is used to build the code.
 
 The output of the build phase will be an executable file with the path `./bin/out` which will be used to run your code.
+
+### Other
+
+If none of the above buildpacks accept the code, The [Python](#python) buildpack will be used as the default/fallback buildpack.
 
 ## Contributions
 
