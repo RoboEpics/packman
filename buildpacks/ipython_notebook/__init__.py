@@ -1,3 +1,5 @@
+from os import path
+
 from repo2docker.buildpacks.python import PythonBuildPack
 
 from ..base import DetectByFilenamePatternMixin, find_first_file_by_pattern
@@ -8,7 +10,7 @@ class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
 
     def get_build_script_files(self):
         files = super().get_preassemble_script_files()
-        files['buildpacks/ipython_notebook/run-ipynb.py'] = 'run-ipynb.py'
+        files[path.join(path.dirname(__file__), 'run-ipynb.py')] = 'run-ipynb.py'
         return files
 
     def get_command(self):
