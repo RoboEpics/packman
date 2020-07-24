@@ -8,7 +8,7 @@ class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
 
     def get_preassemble_script_files(self):
         files = super().get_preassemble_script_files()
-        files['./run-ipynb.py'] = './run-ipynb.py'
+        files['buildpacks/ipython_notebook/run-ipynb.py'] = 'run-ipynb.py'
         return files
 
     def get_command(self):
