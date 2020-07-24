@@ -9,8 +9,8 @@ class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
     eligible_filename_pattern = r"\.ipynb$"
 
     def get_build_script_files(self):
-        files = super().get_preassemble_script_files()
-        files[path.join(path.dirname(__file__), 'run-ipynb.py')] = 'run-ipynb.py'
+        files = super().get_build_script_files()
+        files[path.join(path.dirname(__file__), 'run-ipynb.py')] = '${REPO_DIR}/run-ipynb.py'
         return files
 
     def get_command(self):
