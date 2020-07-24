@@ -52,11 +52,10 @@ def run_notebook(nb):
 
 if __name__ == '__main__':
     for ipynb in sys.argv[1:]:
-        print("Running %s..." % ipynb)
+        print('Running notebook "%s"...' % ipynb)
 
         nb = read(ipynb, current_nbformat)
         cells, failures = run_notebook(nb)
 
-        print('\nRan notebook "%s":' % ipynb)
         print("    Cells ran: %i" % cells)
         print("    Cells raised exception: %i" % failures)

@@ -15,4 +15,4 @@ class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
 
     def get_command(self):
         notebook_file = find_first_file_by_pattern(self.eligible_filename_pattern)
-        return ["./run-ipynb.py", notebook_file]
+        return '{REPO_DIR}/run-ipynb.py "%s"' % notebook_file
