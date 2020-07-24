@@ -6,7 +6,7 @@ from ..base import DetectByFilenamePatternMixin, find_first_file_by_pattern
 class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
     eligible_filename_pattern = r"\.ipynb$"
 
-    def get_preassemble_script_files(self):
+    def get_build_script_files(self):
         files = super().get_preassemble_script_files()
         files['buildpacks/ipython_notebook/run-ipynb.py'] = 'run-ipynb.py'
         return files
