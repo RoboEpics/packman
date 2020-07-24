@@ -1,11 +1,11 @@
 from yaml import safe_load, dump
-import gitlab
+from gitlab import const
 
 from django.db import models
 from django.apps import apps
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError
+from django.core import exceptions
 
 from taggit.managers import TaggableManager
 from slugify import slugify
@@ -29,7 +29,7 @@ class Problem(models.Model):
     description = models.TextField()
 
     datasets = models.ManyToManyField(Dataset, blank=True)
-    config_file = models.FileField(upload_to=settings.PROBLEM_CONFIG_PATH)
+    config_file = models.FileField()
 
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -42,35 +42,10 @@ class Problem(models.Model):
     def get_slug(self):
         return "-".join((slugify(self.title), str(self.id)))
 
-    def enter(self, operator):
-        """Signs the given operator into the problem."""
-
-        self.submitters.create(operator=operator)
-
-        if settings.GITLAB_ENABLED:
-            # Create Gitlab repository in the problem group for the operator
-            gl = gitlab.Gitlab.from_config(gitlab_id=settings.GITLAB_ID, config_files=[settings.GITLAB_CONFIG_PATH])
-            gl_group = gl.groups.get(self.get_slug())
-            gl_project = gl.projects.create({
-                'name': operator.username,
-                'namespace_id': gl_group.id
-            })
-            if operator.get_type() == OperatorTypes.PARTICIPANT:
-                operator = operator.participant.owner
-
-            if operator.get_type() == OperatorTypes.TEAM:
-                members = operator.team.member_set.all()
-                for member in members:
-                    gl_user = gl.users.list(username=member.user.username)[0]
-                    gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
-            else:
-                gl_user = gl.users.list(username=operator.username)[0]
-                gl_project.members.create({'user_id': gl_user.id, 'access_level': gitlab.DEVELOPER_ACCESS})
-
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude)
         if self.owner.get_type() not in [OperatorTypes.USER, OperatorTypes.TEAM]:
-            raise ValidationError('Owner type must be either "User" or "Team"')
+            raise exceptions.ValidationError('Owner type must be either "User" or "Team"')
 
     def save(self, **kwargs):
         self.full_clean()
@@ -83,6 +58,36 @@ class ProblemEnter(models.Model):
 
     date_entered = models.DateTimeField(auto_now_add=True)
 
+    def get_gitlab_repo_url(self):
+        if not settings.GITLAB_ENABLED:
+            return ''
+        return "/".join((settings.GITLAB_URL, self.problem.get_slug(), self.operator.username))
+
+    def save(self, **kwargs):
+        super().save(**kwargs)
+        problem = self.problem
+        operator = self.operator
+
+        if settings.GITLAB_ENABLED:
+            # Create Gitlab repository in the problem group for the operator
+            gl = settings.GITLAB_CLIENT
+            gl_group = gl.groups.get(problem.get_slug())
+            gl_project = gl.projects.create({
+                'name': operator.username,
+                'namespace_id': gl_group.id
+            })
+            if operator.get_type() == OperatorTypes.PARTICIPANT:
+                operator = operator.participant.owner
+
+            if operator.get_type() == OperatorTypes.TEAM:
+                members = operator.team.member_set.all()
+                for member in members:
+                    gl_user = gl.users.list(username=member.user.username)[0]
+                    gl_project.members.create({'user_id': gl_user.id, 'access_level': const.DEVELOPER_ACCESS})
+            else:
+                gl_user = gl.users.list(username=operator.username)[0]
+                gl_project.members.create({'user_id': gl_user.id, 'access_level': const.DEVELOPER_ACCESS})
+
 
 class Submission(models.Model):
     owner = models.ForeignKey(Operator, models.CASCADE)
@@ -91,7 +96,7 @@ class Submission(models.Model):
     reference = models.CharField(max_length=41)
     command = models.CharField(max_length=255, null=True, blank=True)
 
-    selected = ExclusiveBooleanField(on=('owner', 'problem'), default=True)
+    selected = ExclusiveBooleanField(on=('owner', 'problem'), default=False)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -107,7 +112,12 @@ class Submission(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=SubmissionStatus.choices, default=SubmissionStatus.WAITING_IN_QUEUE)
 
+    runs = models.ManyToManyField('Run', through='GatheredSubmission')
+
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
+    class Meta:
+        ordering = ("-date_created",)
 
     def generate_git_repo_path(self):
         return "%s/%s" % (self.problem.get_slug(), self.owner.username)
@@ -141,12 +151,15 @@ class Run(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
+    class Meta:
+        ordering = ("-date_created",)
+
     def save(self, **kwargs):
         super().save(**kwargs)
 
         if self.status == self.RunStatus.READY:
             problem_config = safe_load(self.problem.config_file.read())
-            resource_limits = problem_config['resource_limits']
+            resource_limits = problem_config['resource-limits']
 
             # manifest = {
             #     'apiVersion': 'hub.xerac.cloud/v1',
@@ -246,7 +259,7 @@ class GatheredSubmission(models.Model):
 class Score(models.Model):
     gathered_submission = models.ForeignKey(GatheredSubmission, models.CASCADE)
     definition = models.ForeignKey(ScoreDefinition, models.CASCADE)
-    value = models.BigIntegerField()
+    value = models.DecimalField(max_digits=20, decimal_places=5)
 
     class Meta:
         unique_together = ('gathered_submission', 'definition')

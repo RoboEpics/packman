@@ -28,7 +28,9 @@ DOCKER_REGISTRY_USERNAME = config['registry']['USERNAME']
 DOCKER_REGISTRY_PASSWORD_FILE = config['registry']['PASSWORD_FILE']
 
 # Paths
-PROBLEM_CONFIG_PATH = config['path']['PROBLEM_CONFIG']
+PROBLEM_CONFIG_FILES_PATH = config['path']['PROBLEM_CONFIG_FILES']
+DATASET_DATAS_PATH = config['path']['DATASET_DATAS']
+RUN_LOGS_PATH = config['path']['RUN_LOGS']
 
 # Logging
 LOGGING = {

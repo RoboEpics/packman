@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils.timezone import now
 
 from authorization.models import get_operator_model
 from problem.models import Problem, Run
@@ -41,6 +42,10 @@ class Competition(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
+    def get_open_phases(self):
+        current_time = now()
+        return self.phase_set.filter(date_start__lte=current_time, date_end__gte=current_time)
+
 
 class Phase(models.Model):
     competition = models.ForeignKey(Competition, models.CASCADE)
@@ -61,6 +66,13 @@ class Phase(models.Model):
         RESTRICT = 40, _("Restrict")
 
     type = models.PositiveSmallIntegerField(choices=PhaseTypes.choices)
+
+    class Meta:
+        ordering = ("date_start",)
+
+    @property
+    def is_open(self):
+        return self.date_start < now() < self.date_end
 
 
 class Participant(Operator):

@@ -1,3 +1,5 @@
+from gitlab import Gitlab
+
 from .common_settings import *
 
 config.read(os.environ.get('CONFIG_FILE', '').strip() or os.path.join(BASE_DIR, 'configs', 'production.cfg'))
@@ -20,6 +22,13 @@ DATABASES = {
         'PASSWORD': os.environ.get('DATABASE_PASSWORD', '') or config['database']['PASSWORD']
     }
 }
+
+# Gitlab
+GITLAB_ENABLED = True
+GITLAB_ID = config['gitlab']['ID']
+GITLAB_CONFIG_PATH = config.get('gitlab', 'CONFIG_PATH', fallback=None) or '/root/.gitlab/config.conf'
+GITLAB_CLIENT = Gitlab.from_config(gitlab_id=GITLAB_ID, config_files=[GITLAB_CONFIG_PATH])
+GITLAB_URL = GITLAB_CLIENT._base_url
 
 # S3 storage
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
