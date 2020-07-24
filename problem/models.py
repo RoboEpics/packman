@@ -235,7 +235,7 @@ class Run(models.Model):
                     'memory-resource-limit': resource_limits['memory'],
                     'ephemeral-resource-limit': resource_limits['ephemeral'],
 
-                    'backoff-limit': 2
+                    'backoff-limit': 0
                 }
             }
 
