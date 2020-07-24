@@ -133,7 +133,7 @@ class Run(models.Model):
 
     class RunStatus(models.IntegerChoices):
         PREPARING = 10, _("Preparing")
-        READY = 15, _("Ready")
+        READY = 15, _("Ready To Be Run")
 
         POD_BUILD_JOB_ENQUEUED = 20, _("Pod Build Job Enqueued")
         POD_BUILD_STARTED = 30, _("Pod Build Started")
