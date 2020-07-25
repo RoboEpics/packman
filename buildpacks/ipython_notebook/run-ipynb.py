@@ -11,6 +11,7 @@ Source: https://gist.github.com/AliMirlou/11143323b2bbfe3f5207c63bdc31db00
 
 import os
 import sys
+from queue import Empty
 
 from jupyter_client.manager import KernelManager
 
@@ -32,7 +33,10 @@ def run_notebook(nb):
         kc.execute(cell.source)
 
         # Wait to finish, maximum for 1 hour
-        reply = kc.get_shell_msg(timeout=3600)['content']
+        try:
+            reply = kc.get_shell_msg(timeout=3600)['content']
+        except Empty:
+            reply = {'status': 'error', 'traceback': ["Cell execution timed out!"]}
         if reply['status'] == 'error':
             failures += 1
             print("\nFAILURE:")
