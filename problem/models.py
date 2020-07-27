@@ -4,6 +4,7 @@ from gitlab import const
 from django.db import models
 from django.apps import apps
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.utils.translation import gettext_lazy as _
 from django.core import exceptions
 
@@ -158,7 +159,8 @@ class Run(models.Model):
         super().save(**kwargs)
 
         if self.status == self.RunStatus.READY:
-            problem_config = safe_load(self.problem.config_file.read())
+            with default_storage.open(self.problem.config_file.name) as file:
+                problem_config = safe_load(file.read())
             resource_limits = problem_config['resource-limits']
 
             # manifest = {
