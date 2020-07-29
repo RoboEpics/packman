@@ -32,9 +32,9 @@ def run_notebook(nb):
 
         kc.execute(cell.source)
 
-        # Wait to finish, maximum for 1 hour
+        # Wait to finish, maximum for 3 hour
         try:
-            reply = kc.get_shell_msg(timeout=3600)['content']
+            reply = kc.get_shell_msg(timeout=10800)['content']
         except Empty:
             reply = {'status': 'error', 'traceback': ["Cell execution timed out!"]}
         if reply['status'] == 'error':
