@@ -59,10 +59,16 @@ class ProblemEnter(models.Model):
 
     date_entered = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('operator', 'problem')
+
+    def get_gitlab_repo_path(self):
+        return '/'.join((self.problem.get_slug(), self.operator.username.replace('.', '-')))
+
     def get_gitlab_repo_url(self):
         if not settings.GITLAB_ENABLED:
             return ''
-        return "/".join((settings.GITLAB_URL, self.problem.get_slug(), self.operator.username))
+        return '/'.join((settings.GITLAB_URL, self.get_gitlab_repo_path()))
 
     def save(self, **kwargs):
         super().save(**kwargs)
@@ -119,6 +125,7 @@ class Submission(models.Model):
 
     class Meta:
         ordering = ("-date_created",)
+        unique_together = ('owner', 'problem', 'reference')
 
     def generate_git_repo_path(self):
         return "%s/%s" % (self.problem.get_slug(), self.owner.username)

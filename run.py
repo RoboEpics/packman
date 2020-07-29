@@ -22,7 +22,7 @@ django.setup()
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from problem.models import Submission, Run
+from problem.models import Submission, Run, ProblemEnter
 # from leaderboard.models import SimpleLeaderboard
 
 from buildpacks import *
@@ -106,6 +106,10 @@ def handle_new_message(result):
         client.delete(result)
         return
 
+    enter = ProblemEnter.objects.filter(operator=submission.owner, problem=submission.problem).first()
+    if enter is None:
+        return
+
     # Create Docker image from Gitlab repository
     logger.debug("Creating Docker image for submission %d..." % submission.id)
 
@@ -113,7 +117,7 @@ def handle_new_message(result):
     submission.save()
 
     try:
-        image_name, run_command = create_docker_image(submission.generate_git_repo_path(), submission.reference, submission.generate_image_name())
+        image_name, run_command = create_docker_image(enter.get_gitlab_repo_path(), submission.reference, submission.generate_image_name())
     except Exception:
         capture_exception()
         logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
