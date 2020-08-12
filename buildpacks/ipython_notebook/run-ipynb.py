@@ -48,7 +48,6 @@ def run_notebook(nb):
         sys.stdout.write('.')
 
     kc.stop_channels()
-
     km.shutdown_kernel()
 
     return cells, failures

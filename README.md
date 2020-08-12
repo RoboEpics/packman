@@ -75,7 +75,8 @@ run:
 
 ### Makefile
 
-If a `Makefile` exists in the root of your code, a plain `make` command will be run in the root of your code.
+If a `Makefile` exists in the root of your code, a plain `make` command will be run in the root of your project.
+
 It expects an executable file to be created in the path `./bin/out` and to be the run command for the code.
 
 ### IPython/Jupyter Notebook
@@ -91,7 +92,7 @@ import numpy as np
 
 ### Python
 
-This buildpack will be selected if there is a `requirements.txt` or `runtime.txt` file in the root of your code.
+This buildpack will be selected if there is a `requirements.txt` or `runtime.txt` file in the root of your project.
 
 For the run phase, it expects exactly one `.py` file in your project repository that contains the Python main file (top-level scope) check:
 
@@ -101,7 +102,11 @@ if __name__ == "__main__":
 
 ### R
 
-**_Under maintenance_**
+This buildpack expects a `DESCRIPTION` file in the root of your project.
+
+If there is install.R script in the root of your project, it will be executed in the build phase.
+
+For the run phase, it expects exactly one `.r` file in your project repository to be executed.
 
 ### Java (without build tools)
 
