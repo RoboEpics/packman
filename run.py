@@ -90,7 +90,7 @@ def push_image_to_registry(image_name):
 
 
 def handle_new_message(result):
-    logger.info("Received new message from queue...")
+    logger.info("Received a new message from queue...")
 
     request = loads(result['body'])
     logger.debug("Message content: %s" % str(request))
@@ -106,7 +106,7 @@ def handle_new_message(result):
         client.delete(result)
         return
 
-    enter = ProblemEnter.objects.filter(operator=submission.owner, problem=submission.problem).first()
+    enter = ProblemEnter.objects.filter(owner=submission.problem_enter.owner, problem=submission.problem).first()
     if enter is None:
         return
 
@@ -117,7 +117,7 @@ def handle_new_message(result):
     submission.save()
 
     try:
-        image_name, run_command = create_docker_image(enter.get_gitlab_repo_path(), submission.reference, submission.generate_image_name())
+        image_name, run_command = create_docker_image(enter.get_git_path(), submission.reference, submission.generate_image_name())
     except Exception:
         capture_exception()
         logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
