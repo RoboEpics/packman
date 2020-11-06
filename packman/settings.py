@@ -3,34 +3,56 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
-if os.environ.get('PRODUCTION', '0') == '1':
+from gitlab import Gitlab
+
+if os.environ.get('PRODUCTION', None) == '1':
     from .production_settings import *
 else:
     from .development_settings import *
 
-SECRET_KEY = config['security']['PACKMAN_SECRET_KEY']
+# Sentry
+sentry_sdk.init(
+    dsn=v.get('sentry.backend_dsn'),
+    integrations=[DjangoIntegration()],
+    send_default_pii=True
+)
 
-# Message queue
-QUEUE_CLIENT = config['queue']['CLIENT']
-QUEUE_SERVER_HOST = os.environ.get('QUEUE_HOST', '') or config['queue']['HOST']
-QUEUE_SERVER_USERNAME = os.environ.get('QUEUE_USERNAME', '') or config.get('queue', 'USERNAME', fallback=None)
-QUEUE_SERVER_PASSWORD = os.environ.get('QUEUE_PASSWORD', '') or config.get('queue', 'PASSWORD', fallback=None)
-QUEUE_SERVER_API_URL = f"amqp://{'%s:%s@'% (QUEUE_SERVER_USERNAME, QUEUE_SERVER_PASSWORD) if QUEUE_SERVER_USERNAME else ''}{QUEUE_SERVER_HOST}"
-QUEUE_NAME = config['queue']['SUBMISSION_BUILDER_QUEUE_NAME']
+# Database
+DATABASES = {
+    'default': {
+        'ENGINE': v.get('database.default.engine'),
+        'HOST': v.get('database.default.host'),
+        'PORT': v.get('database.default.port'),
+        'NAME': v.get('database.default.name'),
+        'USER': v.get('database.default.user'),
+        'PASSWORD': v.get('database.default.password')
+    }
+}
 
-# Git
-GIT_HOST = config['git']['HOST']
-GIT_ADMIN_TOKEN = config['git']['ADMIN_TOKEN']
+# Gitlab
+GITLAB_ENABLED = v.get('gitlab.enabled')
+GITLAB_ID = v.get('gitlab.id')
+GITLAB_CONFIG_PATH = v.get('gitlab.config_path')
+GITLAB_CLIENT = Gitlab.from_config(gitlab_id=GITLAB_ID, config_files=[GITLAB_CONFIG_PATH])
+GITLAB_URL = GITLAB_CLIENT._base_url
+
+GIT_HOST = v.get('git.host')
+GIT_ADMIN_NAME = v.get('git.admin_name')
+GIT_ADMIN_EMAIL = v.get('git.admin_email')
+GIT_ADMIN_TOKEN = v.get('git.admin_token')
+GIT_URL = f"https://oauth2:{GIT_ADMIN_TOKEN}@{GIT_HOST}"
+
+# Message Queue
+QUEUE_CLIENT = v.get('queue.client')
+QUEUE_SERVER_HOST = v.get('queue.host')
+QUEUE_SERVER_USERNAME = v.get('queue.username')
+QUEUE_SERVER_PASSWORD = v.get('queue.password')
+QUEUE_SERVER_API_URL = f"amqp://{'%s:%s@' % (QUEUE_SERVER_USERNAME, QUEUE_SERVER_PASSWORD) if QUEUE_SERVER_USERNAME else ''}{QUEUE_SERVER_HOST}"
+DATASET_FILLER_QUEUE_NAME = v.get('queue.dataset_filler_queue_name')
+SUBMISSION_BUILDER_QUEUE_NAME = v.get('queue.submission_builder_queue_name')
 
 # Docker Registry
-DOCKER_REGISTRY_HOST = config['registry']['HOST']
-DOCKER_REGISTRY_USERNAME = config['registry']['USERNAME']
-DOCKER_REGISTRY_PASSWORD_FILE = config['registry']['PASSWORD_FILE']
-
-# Paths
-PROBLEM_CONFIG_FILES_PATH = config['path']['PROBLEM_CONFIG_FILES']
-DATASET_DATAS_PATH = config['path']['DATASET_DATAS']
-RUN_LOGS_PATH = config['path']['RUN_LOGS']
+DOCKER_REGISTRY_HOST = v.get('registry.host')
 
 # Logging
 LOGGING = {
@@ -48,13 +70,7 @@ LOGGING = {
         },
     },
     'root': {
-        'level': (os.environ.get('LOGLEVEL', None) or config.get('log', 'LEVEL', fallback=None) or ('DEBUG' if DEBUG else 'INFO')).upper(),
+        'level': v.get('log.level').upper(),
         'handlers': ['console']
     }
 }
-
-# Sentry
-sentry_sdk.init(
-    dsn=config['sentry']['PACKMAN_DSN'],
-    integrations=[DjangoIntegration()]
-)

@@ -1,30 +1,30 @@
-import os
-import configparser
+from os import environ
+from pathlib import Path
+from vyper import v
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
-config = configparser.ConfigParser(allow_no_value=True)
+SECRET_KEY = 'a'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
 
-    'rest_framework',
-
     'taggit',
 
-    'authorization',
+    'account',
+    'code_metadata',
     'dataset',
     'problem',
     'competition',
     'leaderboard',
 ]
 
-AUTH_USER_MODEL = 'authorization.User'
+AUTH_USER_MODEL = 'account.User'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -32,3 +32,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+if 'CONFIG_DIR' in environ:
+    v.add_config_path(environ['CONFIG_DIR'])
+v.add_config_path('configs')
+v.add_config_path('/configs')
+v.watch_config()
+
+v.automatic_env()
+v.set_env_prefix('roboepics')
