@@ -1,11 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.timezone import now
 
-from authorization.models import get_operator_model
+from account.models import Operator
 from problem.models import Problem, Run
-
-Operator = get_operator_model()
 
 
 class Competition(models.Model):
@@ -13,6 +10,7 @@ class Competition(models.Model):
 
     title = models.CharField(max_length=100)
     description = models.TextField()
+    is_public = models.BooleanField(default=False)
 
     class ParticipationType(models.IntegerChoices):
         INDIVIDUAL = 10, _("Individual-Only")
@@ -33,18 +31,8 @@ class Competition(models.Model):
         blank=True,
         help_text=_('Limit on the maximum number of participants. "null" means there is no limit!')
     )
-    daily_submission_limit = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text=_('Limit on the maximum number of submission per day by each participant. "null" means there is no limit!')
-    )
-    is_public = models.BooleanField(default=False)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    def get_open_phases(self):
-        current_time = now()
-        return self.phase_set.filter(date_start__lte=current_time, date_end__gte=current_time)
 
 
 class Phase(models.Model):
@@ -67,26 +55,10 @@ class Phase(models.Model):
 
     type = models.PositiveSmallIntegerField(choices=PhaseTypes.choices)
 
-    class Meta:
-        ordering = ("date_start",)
-
-    @property
-    def is_open(self):
-        return self.date_start < now() < self.date_end
-
 
 class Participant(Operator):
-    owner = models.ForeignKey(Operator, models.CASCADE, related_name='participations', help_text=_("The User or Team that is submitting to a competition with this Operator."))
+    operator = models.ForeignKey(Operator, models.CASCADE, related_name='participations', help_text=_("The Team that is submitting to a competition with this Operator."))
     competition = models.ForeignKey(Competition, models.CASCADE)
 
-    date_participated = models.DateTimeField(auto_now_add=True, editable=False)
-
     class Meta:
-        unique_together = ('owner', 'competition')
-
-    def save(self, **kwargs):  # FIXME participant shouldn't have a username
-        self.username = "Participant-" + self.owner.username
-        super().save(**kwargs)
-
-    def __str__(self):
-        return self.username
+        unique_together = ('operator', 'competition')
