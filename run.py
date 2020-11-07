@@ -190,5 +190,5 @@ def handle_new_message(result):
 
 
 if __name__ == "__main__":
-    logger.info('Waiting on messages from queue "%s"...' % settings.QUEUE_NAME)
-    client.pull(handle_new_message, settings.QUEUE_NAME)
+    logger.info('Waiting on messages from queue "%s"...' % settings.SUBMISSION_BUILDER_QUEUE_NAME)
+    client.pull(handle_new_message, settings.SUBMISSION_BUILDER_QUEUE_NAME)
