@@ -36,7 +36,10 @@ class Problem(models.Model):
     short_description = models.CharField(max_length=255)
     path = models.CharField(max_length=255)
 
-    gimulator_tag = models.CharField(max_length=40, null=True, blank=True)
+    thumbnail = models.ImageField(null=True, blank=True)
+    cover_image = models.ImageField(null=True, blank=True)
+
+    gimulator_tag = models.CharField(max_length=40)
     number_of_players = models.PositiveIntegerField(null=True, blank=True)
 
     datasets = models.ManyToManyField(Data)

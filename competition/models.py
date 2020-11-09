@@ -10,6 +10,7 @@ class Competition(models.Model):
 
     title = models.CharField(max_length=100)
     description = models.TextField()
+    rules = models.TextField()
     is_public = models.BooleanField(default=False)
 
     class ParticipationType(models.IntegerChoices):
