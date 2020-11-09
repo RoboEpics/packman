@@ -85,7 +85,7 @@ def push_image_to_registry(image_name):
     # if Popen(('docker', 'login', '--username', settings.DOCKER_REGISTRY_USERNAME, '--password-stdin', settings.DOCKER_REGISTRY_HOST), stdin=password.stdout, stdout=PIPE, stderr=PIPE).wait() != 0:
     #     raise ChildProcessError("Docker login failed!")
 
-    if Popen(('docker', 'push', image_name), stdout=PIPE, stderr=PIPE).wait() != 0:
+    if Popen(('docker', '--config', '/data/docker', 'push', image_name), stdout=PIPE, stderr=PIPE).wait() != 0:
         raise ChildProcessError("Docker push failed!")
 
 
