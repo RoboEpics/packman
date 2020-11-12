@@ -22,7 +22,7 @@ django.setup()
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from problem.models import Submission, Run, ProblemEnter
+from problem.models import Submission, Run, ProblemEnter, ProblemCode
 # from leaderboard.models import SimpleLeaderboard
 
 from buildpacks import *
@@ -94,6 +94,34 @@ def handle_new_message(result):
 
     request = loads(result['body'])
     logger.debug("Message content: %s" % str(request))
+
+    if 'code_id' in request:  # FIXME
+        code = ProblemCode.objects.get(id=request['code_id'])
+        try:
+            image_name, run_command = create_docker_image(code.get_git_path(), request['reference'],
+                                                          "%s:%d" % (code.get_git_path().lower(), code.id))
+
+            logger.debug("Successfully created Docker image for ProblemCode %d!" % code.id)
+        except Exception:
+            capture_exception()
+            logger.error("Something went wrong while building Docker image for ProblemCode %d!" % code.id)
+
+            # channel.basic_ack(method.delivery_tag)
+            client.delete(result)
+
+            return
+
+        try:
+            push_image_to_registry(image_name)
+
+            logger.debug("Successfully pushed Docker image for ProblemCode %d!" % code.id)
+        except ChildProcessError:
+            capture_exception()
+
+            logger.error("Something went wrong while pushing Docker image for ProblemCode %d!" % code.id)
+
+        client.delete(result)
+        return
 
     try:
         submission = Submission.objects.get(id=request['submission_id'])
