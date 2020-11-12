@@ -198,20 +198,20 @@ def handle_new_message(result):
     #     owner_id=submission.owner_id
     # )
 
-    try:
-        # Create Run object right after the submission build was successful
-        run = Run.objects.create(owner=submission.owner, problem=submission.problem)
-        run.gatheredsubmission_set.create(submission=submission)
-        run.score_definitions.add(1)  # FIXME
-        run.status = Run.RunStatus.READY
-        run.save()
-    except Exception as e:
-        capture_exception()
-
-        logger.error("Something went wrong while creating run object for submission %d!" % submission.id)
-        logger.error(str(e))
-
-        return
+    # try:
+    #     # Create Run object right after the submission build was successful
+    #     run = Run.objects.create(owner=submission.owner, problem=submission.problem)
+    #     run.gatheredsubmission_set.create(submission=submission)
+    #     run.score_definitions.add(1)  # FIXME
+    #     run.status = Run.RunStatus.READY
+    #     run.save()
+    # except Exception as e:
+    #     capture_exception()
+    #
+    #     logger.error("Something went wrong while creating run object for submission %d!" % submission.id)
+    #     logger.error(str(e))
+    #
+    #     return
 
     # channel.basic_ack(method.delivery_tag)
     client.delete(result)
