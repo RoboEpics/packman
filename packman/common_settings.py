@@ -33,6 +33,8 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+TAGGIT_CASE_INSENSITIVE = True
+
 if 'CONFIG_DIR' in environ:
     v.add_config_path(environ['CONFIG_DIR'])
 v.add_config_path('configs')

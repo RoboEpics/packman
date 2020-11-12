@@ -10,6 +10,3 @@ v.set_default('database.default.user', 'roboepics')
 v.set_default('gitlab.config_path', '/root/.gitlab/config.conf')
 
 v.set_default('log.level', 'INFO')
-
-# CORS header
-CORS_ORIGIN_REGEX_WHITELIST = v.get('cors_origin_whitelist')

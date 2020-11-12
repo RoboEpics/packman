@@ -18,6 +18,3 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 STATIC_ROOT = 'static'
 MEDIA_URL = '/media/'
-
-# CORS header
-CORS_ORIGIN_ALLOW_ALL = True
