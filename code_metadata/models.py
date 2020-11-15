@@ -15,5 +15,11 @@ class Code(models.Model):
 
     date_created = models.DateTimeField(_("date created"), auto_now_add=True, editable=False)
 
-    def get_git_path(self):
+    def get_git_repo_path(self):
         return settings.GITLAB_CLIENT.projects.get(self.project_id).path_with_namespace
+
+    def get_git_repo_url(self):
+        return '/'.join((settings.GIT_URL, self.get_git_repo_path())) + '.git'
+
+    def get_gitlab_project_url(self):
+        return '/'.join((settings.GITLAB_URL, self.get_git_repo_path()))

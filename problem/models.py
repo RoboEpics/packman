@@ -1,5 +1,9 @@
+from json import dumps
+
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.apps import apps
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
@@ -34,12 +38,12 @@ class Problem(models.Model):
 
     title = models.CharField(max_length=200)
     short_description = models.CharField(max_length=255)
-    path = models.CharField(max_length=255)
+    path = models.CharField(max_length=255, unique=True)
 
     thumbnail = models.ImageField(null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
-    gimulator_tag = models.CharField(max_length=40)
+    gimulator_tag = models.CharField(max_length=40, null=True, blank=True)
     number_of_players = models.PositiveIntegerField(null=True, blank=True)
 
     datasets = models.ManyToManyField(Data)
@@ -92,7 +96,7 @@ class Submission(models.Model):
 
     reference = models.CharField(max_length=41)
 
-    selected = ExclusiveBooleanField(on=('submitter', 'problem'), default=False)
+    selected = ExclusiveBooleanField(on=('problem_enter', 'problem'), default=False)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -104,7 +108,8 @@ class Submission(models.Model):
         IMAGE_BUILD_SUCCESSFUL = 50, _("Image Build Successful")
 
         IMAGE_PUSH_FAILED = 60, _("Image Push Failed")
-        IMAGE_READY = 70, _("Image Ready")
+
+        SUBMISSION_READY = 100, _("Submission Ready")
 
     status = models.PositiveSmallIntegerField(choices=SubmissionStatus.choices, default=SubmissionStatus.WAITING_IN_QUEUE)
 
@@ -116,8 +121,22 @@ class Submission(models.Model):
         ordering = ("-date_created",)
         unique_together = ('submitter', 'problem', 'reference')
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE and self.problem.gimulator_tag is not None:
+            apps.get_app_config("problem").queue.push(dumps({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
+        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and self.problem.number_of_players is None:
+            run = Run.objects.create(owner=self.problem_enter.owner, problem=self.problem)
+            run.gatheredsubmission_set.create(submission=self)
+            run.score_definitions.add(1)
+            run.status = Run.RunStatus.READY
+            run.save()
+
     def generate_image_name(self):
-        return "%s:%d" % (self.problem_enter.get_git_path().lower(), self.id)
+        if self.problem.gimulator_tag is None:
+            return "roboepics/competitions/roboepics-result-only-submission:latest"
+        return "%s:%d" % (self.problem_enter.get_git_repo_path().lower(), self.id)
 
 
 class Run(models.Model):
@@ -147,6 +166,46 @@ class Run(models.Model):
 
     class Meta:
         ordering = ("-date_created",)
+
+    def save(self, **kwargs):
+        super().save(**kwargs)
+
+        if self.status == self.RunStatus.READY:
+            director_code = self.problem.problemcode_set.filter(tags__name="evaluator").first()
+            manifest = {
+                'apiVersion': 'hub.roboepics.com/v1',
+                'kind': 'Room',
+                'metadata': {
+                    'name': 'room-%d' % self.id,
+                    'namespace': 'hub-system'
+                },
+                'spec': {
+                    'id': str(self.id),
+                    'problemID': str(self.problem_id),
+
+                    'director': {
+                        'name': '-'.join((str(director_code.id), str(self.id))),
+                        'image': '/'.join((
+                            settings.DOCKER_REGISTRY_HOST,
+                            "%s:%d" % (director_code.get_git_repo_path().lower(), director_code.id)
+                        ))
+                    },
+                    'actors': [
+                        {
+                            'name': str(gathered_submission.id),
+                            'image': '/'.join((
+                                settings.DOCKER_REGISTRY_HOST,
+                                gathered_submission.submission.generate_image_name()
+                            )),
+                            'role': gathered_submission.role
+                        } for gathered_submission in self.gatheredsubmission_set.all()
+                    ]
+                }
+            }
+
+            apps.get_app_config("problem").queue.push(dumps(manifest), settings.ROOM_QUEUE_NAME)
+
+            super().save(**kwargs)
 
 
 class GatheredSubmission(models.Model):
