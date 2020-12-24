@@ -1,6 +1,5 @@
-boto3==1.16.18
-Django==3.1.3
-django-exclusivebooleanfield==0.3.0
+boto3==1.16.43
+Django==3.1.4
 django-taggit==1.3.0
 jupyter==1.0.0
 Pillow==8.0.1
@@ -10,6 +9,6 @@ PyYaml==5.3.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@74375546dba008c0862eab16a742b9d34804aa26#egg=rabbitmq_client
 -e git://github.com/Syfract/simple-queue-client.git@e93d2c2a03d162f69b302558512fe0ed0e5d1338#egg=simple_queue_client
 -e git://github.com/AliMirlou/repo2docker.git@d172f211066cfa782c10ced4ec8ec153f3e644ea#egg=jupyter-repo2docker
-sentry-sdk==0.19.3
+sentry-sdk==0.19.5
 vyper-config==1.0.0
-wheel==0.35.1
+wheel==0.36.2
