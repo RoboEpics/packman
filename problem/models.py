@@ -9,9 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 from taggit.models import TagBase, GenericTaggedItemBase
 
-from exclusivebooleanfield import ExclusiveBooleanField
-
-from account.models import Operator
+from account.models import Team
 from code_metadata.models import Code
 from dataset.models import Data
 
@@ -34,7 +32,7 @@ class ScoreDefinition(models.Model):
 
 
 class Problem(models.Model):
-    owner = models.ForeignKey(Operator, models.CASCADE)
+    owner = models.ForeignKey(User, models.CASCADE)
 
     title = models.CharField(max_length=200)
     short_description = models.CharField(max_length=255)
@@ -43,10 +41,10 @@ class Problem(models.Model):
     thumbnail = models.ImageField(null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
-    gimulator_tag = models.CharField(max_length=40, null=True, blank=True)
+    gimulator_tag = models.CharField(max_length=40)
     number_of_players = models.PositiveIntegerField(null=True, blank=True)
 
-    datasets = models.ManyToManyField(Data)
+    datasets = models.ManyToManyField(Data, blank=True)
 
     output_volume_size = models.PositiveIntegerField(null=True, blank=True)
     resource_cpu_limit = models.FloatField(default=1.)
@@ -59,7 +57,7 @@ class Problem(models.Model):
 
     date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
 
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
 
     class Meta:
         ordering = ("-date_created",)
@@ -80,10 +78,11 @@ class ProblemText(models.Model):
 class ProblemCode(Code):
     problem = models.ForeignKey(Problem, models.CASCADE)
 
-    tags = TaggableManager(through=TaggedProblemCode)
+    tags = TaggableManager(through=TaggedProblemCode, blank=True)
 
 
 class ProblemEnter(Code):
+    team = models.ForeignKey(Team, models.CASCADE)
     problem = models.ForeignKey(Problem, models.CASCADE, related_name='submitters')
 
     notebook_file_id = models.CharField(max_length=100, null=True, blank=True)
@@ -92,11 +91,8 @@ class ProblemEnter(Code):
 class Submission(models.Model):
     submitter = models.ForeignKey(User, models.CASCADE)
     problem_enter = models.ForeignKey(ProblemEnter, models.CASCADE)
-    problem = models.ForeignKey(Problem, models.CASCADE)  # A shortcut for efficiency
 
     reference = models.CharField(max_length=41)
-
-    selected = ExclusiveBooleanField(on=('problem_enter', 'problem'), default=False)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -113,34 +109,39 @@ class Submission(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=SubmissionStatus.choices, default=SubmissionStatus.WAITING_IN_QUEUE)
 
-    runs = models.ManyToManyField('Run', through='GatheredSubmission')
+    runs = models.ManyToManyField('Run', through='GatheredSubmission')  # A shortcut for simplicity
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
         ordering = ("-date_created",)
-        unique_together = ('submitter', 'problem', 'reference')
+        unique_together = ('problem_enter', 'reference')
 
     def save(self, *args, **kwargs):
+        problem = self.problem_enter.problem
+        if not problem.gimulator_tag:
+            self.status = Submission.SubmissionStatus.SUBMISSION_READY
+
         super().save(*args, **kwargs)
 
-        if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE and self.problem.gimulator_tag is not None:
-            apps.get_app_config("problem").queue.push(dumps({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
-        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and self.problem.number_of_players is None:
-            run = Run.objects.create(owner=self.problem_enter.owner, problem=self.problem)
+        if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
+            if problem.gimulator_tag:
+                # Send the submission to builder queue
+                apps.get_app_config("problem").queue.push(dumps({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
+        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.number_of_players is None:
+            run = Run.objects.create(owner=self.submitter, problem=problem)
             run.gatheredsubmission_set.create(submission=self)
             run.score_definitions.add(1)
             run.status = Run.RunStatus.READY
             run.save()
 
     def generate_image_name(self):
-        if self.problem.gimulator_tag is None:
-            return "roboepics/competitions/roboepics-result-only-submission:latest"
-        return "%s:%d" % (self.problem_enter.get_git_repo_path().lower(), self.id)
+        problem_enter = self.problem_enter
+        return settings.RESULT_ONLY_IMAGE_PATH if not problem_enter.problem.gimulator_tag else "%s:%d" % (problem_enter.get_git_repo_path().lower(), self.id)
 
 
 class Run(models.Model):
-    owner = models.ForeignKey(Operator, models.CASCADE)
+    owner = models.ForeignKey(User, models.CASCADE)
     problem = models.ForeignKey(Problem, models.CASCADE)  # A shortcut for efficiency
     score_definitions = models.ManyToManyField(ScoreDefinition, blank=True)
 
@@ -197,7 +198,14 @@ class Run(models.Model):
                                 settings.DOCKER_REGISTRY_HOST,
                                 gathered_submission.submission.generate_image_name()
                             )),
-                            'role': gathered_submission.role
+                            'role': gathered_submission.role,
+                            'envs': [
+                                {'name': 'S3_ENDPOINT_URL', 'value': settings.S3_ENDPOINT_URL.split('//')[1]},
+                                {'name': 'S3_ACCESS_KEY_ID', 'value': settings.S3_ACCESS_KEY_ID},
+                                {'name': 'S3_SECRET_ACCESS_KEY', 'value': settings.S3_SECRET_ACCESS_KEY},
+                                {'name': 'S3_TEMP_RESULT_BUCKET_NAME', 'value': settings.S3_TEMP_RESULT_BUCKET_NAME},
+                                {'name': 'S3_PATH_PREFIX', 'value': f'{str(gathered_submission.submission.problem_enter_id)}/'}
+                            ] if gathered_submission.submission.problem_enter.problem.number_of_players is None else []
                         } for gathered_submission in self.gatheredsubmission_set.all()
                     ]
                 }

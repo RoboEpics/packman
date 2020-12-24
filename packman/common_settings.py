@@ -21,7 +21,6 @@ INSTALLED_APPS = [
     'dataset',
     'problem',
     'competition',
-    'leaderboard',
 ]
 
 AUTH_USER_MODEL = 'account.User'

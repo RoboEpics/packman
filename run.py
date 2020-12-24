@@ -22,7 +22,7 @@ django.setup()
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from problem.models import Submission, ProblemEnter, ProblemCode
+from problem.models import Submission, ProblemCode
 # from leaderboard.models import SimpleLeaderboard
 
 from buildpacks import *
@@ -98,8 +98,8 @@ def handle_new_message(result):
     if 'code_id' in request:  # FIXME
         code = ProblemCode.objects.get(id=request['code_id'])
         try:
-            image_name, run_command = create_docker_image(code.get_git_path(), request['reference'],
-                                                          "%s:%d" % (code.get_git_path().lower(), code.id))
+            image_name, run_command = create_docker_image(code.get_git_repo_path(), request['reference'],
+                                                          "%s:%d" % (code.get_git_repo_path().lower(), code.id))
 
             logger.debug("Successfully created Docker image for ProblemCode %d!" % code.id)
         except Exception:
@@ -134,7 +134,7 @@ def handle_new_message(result):
         client.delete(result)
         return
 
-    enter = ProblemEnter.objects.filter(owner=submission.problem_enter.owner, problem=submission.problem).first()
+    enter = submission.problem_enter
     if enter is None:
         return
 
@@ -145,7 +145,7 @@ def handle_new_message(result):
     submission.save()
 
     try:
-        image_name, run_command = create_docker_image(enter.get_git_path(), submission.reference, submission.generate_image_name())
+        image_name, run_command = create_docker_image(enter.get_git_repo_path(), submission.reference, submission.generate_image_name())
     except Exception:
         capture_exception()
         logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)

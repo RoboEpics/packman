@@ -1,13 +1,14 @@
 from django.db import models
+from django.apps import apps
 from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
 
-from account.models import Operator, User
+from account.models import User
 
 
 class Dataset(models.Model):
-    owner = models.ForeignKey(Operator, models.CASCADE, related_name='datasets')
+    owner = models.ForeignKey(User, models.CASCADE, related_name='datasets')
 
     title = models.CharField(max_length=70, unique=True)
     subtitle = models.CharField(max_length=100, null=True, blank=True)
@@ -15,10 +16,10 @@ class Dataset(models.Model):
     cover_image = models.ImageField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
 
-    is_public = models.BooleanField(default=False, editable=False)
-    upvotes = models.ManyToManyField(User, related_name='upvoted_datasets')
+    is_public = models.BooleanField(default=False)
+    upvotes = models.ManyToManyField(User, related_name='upvoted_datasets', blank=True)
 
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
@@ -30,7 +31,6 @@ class Dataset(models.Model):
 class Data(models.Model):
     dataset = models.ForeignKey(Dataset, models.CASCADE, related_name='versions')
 
-    previous_version = models.OneToOneField('self', models.SET_NULL, null=True, blank=True)
     version = models.CharField(max_length=20)
 
     description = models.TextField(null=True, blank=True)
@@ -47,10 +47,14 @@ class Data(models.Model):
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
-        ordering = ('date_created',)
+        ordering = ('-date_created',)
         unique_together = ('dataset', 'version')
 
 
 class File(models.Model):
     data = models.ForeignKey(Data, models.CASCADE)
+    file_name = models.CharField(max_length=255)
     file_id = models.CharField(max_length=100)
+
+    def get_url(self):
+        return apps.get_app_config("dataset").google_drive_client.files().get(fileId=self.file_id, fields='webContentLink').execute()['webContentLink']

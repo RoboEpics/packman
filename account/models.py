@@ -1,27 +1,32 @@
-from enum import Enum
 import unicodedata
 
 from django.db import models
+from django.contrib.auth.models import PermissionsMixin, UnicodeUsernameValidator, UserManager
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import PermissionsMixin, UnicodeUsernameValidator
+
+from taggit.managers import TaggableManager
+from taggit.models import TagBase, CommonGenericTaggedItemBase
 
 
-class OperatorTypes(Enum):
-    TEAM = "team"
-    PARTICIPANT = "participant"
+class AccountTag(TagBase):
+    """
+    Used for tags like "test" or "beta tester" for now.
+    """
+
+    class Meta:
+        verbose_name = _("Account Tag")
+        verbose_name_plural = _("Account Tags")
 
 
-class Operator(models.Model):
-    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True, editable=False)
-
-    def get_type(self):
-        for t in OperatorTypes:
-            if hasattr(self, t.value):
-                return t
+class TaggedAccount(CommonGenericTaggedItemBase):
+    object_id = models.CharField(max_length=50, verbose_name=_("object ID"), db_index=True)
+    tag = models.ForeignKey(AccountTag, models.CASCADE, related_name="%(app_label)s_%(class)s_items")
 
 
 class User(PermissionsMixin):
-    fusion_user_id = models.CharField(max_length=200, primary_key=True)
+    fusion_user_id = models.CharField(max_length=50, primary_key=True)
+    gitlab_user_id = models.IntegerField(unique=True, null=True, blank=True)
     username = models.CharField(
         _('username'),
         max_length=55,
@@ -34,8 +39,10 @@ class User(PermissionsMixin):
     )
     email = models.EmailField(_('email'), unique=True)
 
-    full_name = models.CharField(_('full name'), max_length=150)
+    full_name = models.CharField(_('full name'), max_length=100)
     profile_picture = models.ImageField(upload_to='profile', default='profile/no_avatar.png')
+
+    tags = TaggableManager(through=TaggedAccount, blank=True)
 
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True, editable=False)
     last_login = models.DateTimeField(_('last login'), blank=True, null=True, editable=False)
@@ -54,6 +61,8 @@ class User(PermissionsMixin):
         )
     )
 
+    objects = UserManager()
+
     REQUIRED_FIELDS = []
 
     EMAIL_FIELD = 'email'
@@ -68,14 +77,15 @@ class User(PermissionsMixin):
         return self.full_name
 
     def get_full_name(self):
-        """
-        Return the first_name.
-        """
+        """Return the first_name."""
         return self.get_short_name()
 
     def get_username(self):
         """Return the username for this User."""
         return getattr(self, self.USERNAME_FIELD)
+
+    def get_gitlab_user(self):
+        return settings.GITLAB_CLIENT.users.get(self.gitlab_user_id)
 
     def clean(self):
         setattr(self, self.USERNAME_FIELD, self.normalize_username(self.get_username()))
@@ -123,24 +133,31 @@ class Trust(models.Model):
 
 
 class TeamManager(models.Manager):
-    def create(self, name, creator, members):
-        team = super().create(name=name, creator=creator)
-        team.member_set.create(user=creator, status=Member.MembershipStatus.MEMBER)
+    def create(self, name, image, creator, members=None):
+        if members is None:
+            members = []
 
+        team = super().create(name=name, image=image, creator=creator)
+
+        team.member_set.create(user=creator, status=Member.MembershipStatus.MEMBER)
         for member in members:
-            user = User.objects.get(username=member)
-            if creator.trusted_by.filter(truster=user).exists():
-                team.member_set.create(user=user, status=Member.MembershipStatus.MEMBER)
+            if creator.trusted_by.filter(truster=member).exists():
+                team.member_set.create(user=member, status=Member.MembershipStatus.MEMBER)
             else:
-                team.inviterequest_set.create(user=user)
+                team.inviterequest_set.create(user=member)
 
         return team
 
 
-class Team(Operator):
+class Team(models.Model):
     creator = models.ForeignKey(User, models.CASCADE)
 
-    name = models.CharField(max_length=70)
+    name = models.CharField(max_length=100)
+    image = models.ImageField(upload_to='profile', default='team_profile/no_avatar.png')
+
+    members = models.ManyToManyField(User, through='Member', related_name='teams')
+
+    date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
 
     objects = TeamManager()
 
@@ -149,7 +166,7 @@ class Member(models.Model):
     user = models.ForeignKey(User, models.CASCADE)
     team = models.ForeignKey(Team, models.CASCADE)
 
-    class AccessLevel(models.IntegerChoices):
+    class AccessLevel(models.IntegerChoices):  # TODO discuss the different access levels
         LEADER = 10, _("Leader")
         SUBMITTER = 20, _("Submitter")
         MEMBER = 30, _("Member")
@@ -175,6 +192,8 @@ class InviteRequest(models.Model):
         SEEN = 20, _("Seen")
         DENIED = 30, _("Denied")
         ACCEPTED = 40, _("Accepted")
+        EXPIRED = 50, _("Expired")
+        CLOSED = 60, _("Closed")
 
     status = models.PositiveSmallIntegerField(choices=InviteRequestStatus.choices, default=InviteRequestStatus.RECEIVED)
 
@@ -190,3 +209,13 @@ class JoinRequest(models.Model):
         ACCEPTED = 40, _("Accepted")
 
     status = models.PositiveSmallIntegerField(choices=JoinRequestStatus.choices, default=JoinRequestStatus.RECEIVED)
+
+
+class TeamEventHistory(models.Model):
+    team = models.ForeignKey(Team, models.CASCADE)
+
+    text = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
+    class Meta:
+        ordering = ('-date_created',)
