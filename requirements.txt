@@ -10,7 +10,7 @@ Pillow==7.2.0
 psycopg2-binary==2.8.5
 python-gitlab==2.4.0
 python-slugify==4.0.1
-PyYaml==5.3.1
+PyYaml==5.4
 -e git://github.com/Syfract/simple-rabbitmq-client.git@74375546dba008c0862eab16a742b9d34804aa26#egg=rabbitmq_client
 -e git://github.com/Syfract/simple-queue-client.git@e93d2c2a03d162f69b302558512fe0ed0e5d1338#egg=simple_queue_client
 -e git://github.com/AliMirlou/repo2docker.git@d172f211066cfa782c10ced4ec8ec153f3e644ea#egg=jupyter-repo2docker
