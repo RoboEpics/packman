@@ -28,7 +28,7 @@ class Competition(models.Model):
         MARKDOWN = 20, _("Markdown")
         HTML = 30, _("HTML")
         NOTEBOOK = 40, _("Jupyter Notebook")
-    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)  # TODO find a better way
+    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)
 
     rules = models.TextField(blank=True)
     prize = models.CharField(max_length=50, null=True, blank=True)
@@ -77,7 +77,7 @@ class Competition(models.Model):
             return 10
         elif current_time < self.phase_set.only('submission_date_start').order_by('submission_date_start').first().submission_date_start:
             return 20
-        elif current_time > self.phase_set.only('submission_date_end').order_by('submission_date_end').first().submission_date_end:  # FIXME should consider test or restrict dates too!
+        elif current_time > self.phase_set.only('submission_date_end').order_by('submission_date_end').first().submission_date_end:
             return 40
         else:
             return 30
@@ -104,7 +104,7 @@ class CompetitionAnnouncement(models.Model):
         ordering = ('-date_created',)
 
 
-class Phase(models.Model):  # TODO LeaderBoard
+class Phase(models.Model):
     competition = models.ForeignKey(Competition, models.CASCADE)
 
     title = models.CharField(max_length=100)

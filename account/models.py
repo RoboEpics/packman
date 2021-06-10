@@ -145,7 +145,7 @@ class User(PermissionsMixin):
         return unicodedata.normalize('NFKC', username) if isinstance(username, str) else username
 
     def check_password(self, raw_password):
-        return False  # FIXME Django default authentication backend uses this and I don't know a better workaround
+        return False
 
 
 class SocialLink(models.Model):

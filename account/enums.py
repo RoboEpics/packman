@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-class MemberAccessLevel(models.IntegerChoices):  # TODO discuss the different access levels
+class MemberAccessLevel(models.IntegerChoices):
     LEADER = 10, _("Leader")
     SUBMITTER = 20, _("Submitter")
     MEMBER = 30, _("Member")

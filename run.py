@@ -89,10 +89,10 @@ def push_image_to_registry(image_name):
         raise ChildProcessError("Docker push failed!")
 
 
-def handle_new_message(result):
+def handle_new_message(channel, method_frame, header_frame, result):
     logger.info("Received a new message from queue...")
 
-    request = loads(result['body'])
+    request = loads(result)
     logger.debug("Message content: %s" % str(request))
 
     if 'code_id' in request:  # FIXME
@@ -106,8 +106,8 @@ def handle_new_message(result):
             capture_exception()
             logger.error("Something went wrong while building Docker image for ProblemCode %d!" % code.id)
 
-            # channel.basic_ack(method.delivery_tag)
-            client.delete(result)
+            channel.basic_ack(method_frame.delivery_tag)
+            # client.delete(result)
 
             return
 
@@ -120,7 +120,8 @@ def handle_new_message(result):
 
             logger.error("Something went wrong while pushing Docker image for ProblemCode %d!" % code.id)
 
-        client.delete(result)
+        channel.basic_ack(method_frame.delivery_tag)
+        # client.delete(result)
         return
 
     try:
@@ -130,8 +131,8 @@ def handle_new_message(result):
 
         logger.error("No submission with the given id exists! Dropping message from queue...")
 
-        # channel.basic_ack(method.delivery_tag)
-        client.delete(result)
+        channel.basic_ack(method_frame.delivery_tag)
+        # client.delete(result)
         return
 
     enter = submission.problem_enter
@@ -153,8 +154,8 @@ def handle_new_message(result):
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_FAILED
         submission.save()
 
-        # channel.basic_ack(method.delivery_tag)
-        client.delete(result)
+        channel.basic_ack(method_frame.delivery_tag)
+        # client.delete(result)
 
         return
 
@@ -198,8 +199,8 @@ def handle_new_message(result):
     #     owner_id=submission.owner_id
     # )
 
-    # channel.basic_ack(method.delivery_tag)
-    client.delete(result)
+    channel.basic_ack(method_frame.delivery_tag)
+    # client.delete(result)
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ class Dataset(models.Model):
         MARKDOWN = 20, _("Markdown")
         HTML = 30, _("HTML")
         NOTEBOOK = 40, _("Jupyter Notebook")
-    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)  # TODO find a better way
+    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)
 
     class AccessLevel(models.IntegerChoices):
         PUBLIC = 10, _("Public")
