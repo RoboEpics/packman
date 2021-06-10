@@ -6,7 +6,9 @@ from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
 from account.models import Team
-from problem.models import Problem, Run
+from problem.models import Problem, ProblemEnter, Run
+
+from utils import random_path
 
 User = get_user_model()
 
@@ -15,21 +17,36 @@ class Competition(models.Model):
     owner = models.ForeignKey(User, models.CASCADE, related_name='hosted_competitions')
 
     title = models.CharField(max_length=70)
-    subtitle = models.CharField(max_length=100)
+    subtitle = models.CharField(max_length=200)
+
+    path = models.CharField(max_length=255, unique=True, default=random_path)
+
     description = models.TextField()
-    rules = models.TextField()
+
+    class ContentType(models.IntegerChoices):
+        RAW_TEXT = 10, _("Raw Text")
+        MARKDOWN = 20, _("Markdown")
+        HTML = 30, _("HTML")
+        NOTEBOOK = 40, _("Jupyter Notebook")
+    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)  # TODO find a better way
+
+    rules = models.TextField(blank=True)
+    prize = models.CharField(max_length=50, null=True, blank=True)
 
     thumbnail = models.ImageField(null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
-    is_public = models.BooleanField(default=False)
+    class AccessLevel(models.IntegerChoices):
+        PUBLIC = 10, _("Public")
+        PRIVATE = 20, _("Private")
+        LIMITED = 30, _("Limited")
+    access_level = models.PositiveSmallIntegerField(choices=AccessLevel.choices, default=AccessLevel.PRIVATE)
     is_published = models.BooleanField(default=False)
     date_published = models.DateTimeField(_('date published'), null=True, blank=True)
 
     class ParticipationType(models.IntegerChoices):
         INDIVIDUAL = 10, _("Individual-Only")
         BOTH = 30, _("Individual and Team")
-
     participation_type = models.PositiveSmallIntegerField(choices=ParticipationType.choices, default=ParticipationType.BOTH)
     team_member_limit = models.PositiveIntegerField(
         null=True, blank=True,
@@ -47,16 +64,27 @@ class Competition(models.Model):
     register_date_end = models.DateTimeField(null=True, blank=True)
 
     tags = TaggableManager(blank=True)
+    category_id = models.PositiveIntegerField(null=True, blank=True, help_text=_("Category ID of Discourse for this competition."))
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     def get_difficulty(self):
         return "simple" if self.phase_set.count() == 1 and self.phase_set.first().problems.count() == 1 else "advanced"
 
-    def get_open_phases(self, type=None):
+    def get_status(self):
         current_time = now()
-        type_filter = {'type': type} if type is not None else {}
-        return self.phase_set.filter(date_start__lte=current_time, date_end__gte=current_time, **type_filter)
+        if current_time < self.register_date_start or not self.phase_set.exists():
+            return 10
+        elif current_time < self.phase_set.only('submission_date_start').order_by('submission_date_start').first().submission_date_start:
+            return 20
+        elif current_time > self.phase_set.only('submission_date_end').order_by('submission_date_end').first().submission_date_end:  # FIXME should consider test or restrict dates too!
+            return 40
+        else:
+            return 30
+
+    def get_open_phases(self):
+        current_time = now()
+        return self.phase_set.filter(date_start__lte=current_time, date_end__gte=current_time)
 
     def __str__(self):
         return "Competition: " + self.title
@@ -65,7 +93,11 @@ class Competition(models.Model):
 class CompetitionAnnouncement(models.Model):
     competition = models.ForeignKey(Competition, models.CASCADE)
 
-    text = models.TextField()
+    title = models.CharField(max_length=100, null=True, blank=True)
+    text = models.TextField(blank=True)
+
+    tags = TaggableManager(blank=True)
+
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
@@ -86,6 +118,8 @@ class Phase(models.Model):  # TODO LeaderBoard
     restrict_date_start = models.DateTimeField(null=True, blank=True)
     restrict_date_end = models.DateTimeField(null=True, blank=True)
 
+    eligible_score = models.DecimalField(max_digits=20, decimal_places=5, null=True, blank=True)
+
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
 
@@ -94,6 +128,7 @@ class PhaseProblem(models.Model):
     problem = models.OneToOneField(Problem, models.CASCADE)
 
     weight = models.FloatField(default=1.)
+    eligible_score = models.DecimalField(max_digits=20, decimal_places=5, null=True, blank=True)
 
 
 class Participant(models.Model):
@@ -102,3 +137,20 @@ class Participant(models.Model):
 
     class Meta:
         unique_together = ('team', 'competition')
+
+
+class CompetitionInviteRequest(models.Model):
+    competition = models.ForeignKey(Competition, models.CASCADE)
+    user = models.ForeignKey(User, models.CASCADE)
+
+    class Status(models.IntegerChoices):
+        RECEIVED = 10, _("Received")
+        SEEN = 20, _("Seen")
+        DENIED = 30, _("Denied")
+        ACCEPTED = 40, _("Accepted")
+        EXPIRED = 50, _("Expired")
+        CLOSED = 60, _("Closed")
+    status = models.PositiveSmallIntegerField(choices=Status.choices, default=Status.RECEIVED)
+
+    class Meta:
+        unique_together = ('user', 'competition')

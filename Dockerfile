@@ -1,6 +1,5 @@
 FROM python:3-slim-buster
 
-
 # Install deps and build deps
 RUN apt-get -q update && apt-get -qqy install \
     git apt-transport-https ca-certificates curl gnupg-agent software-properties-common

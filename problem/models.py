@@ -13,6 +13,8 @@ from account.models import Team
 from code_metadata.models import Code
 from dataset.models import Data
 
+from utils import random_path
+
 User = get_user_model()
 
 
@@ -36,12 +38,12 @@ class Problem(models.Model):
 
     title = models.CharField(max_length=200)
     short_description = models.CharField(max_length=255)
-    path = models.CharField(max_length=255, unique=True)
+    path = models.CharField(max_length=255, unique=True, default=random_path)
 
     thumbnail = models.ImageField(null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
-    gimulator_tag = models.CharField(max_length=40)
+    gimulator_tag = models.CharField(max_length=40, null=True, blank=True)
     number_of_players = models.PositiveIntegerField(null=True, blank=True)
 
     datasets = models.ManyToManyField(Data, blank=True)
@@ -69,10 +71,18 @@ class ProblemText(models.Model):
     title = models.CharField(max_length=30)
     text = models.TextField()
 
-    order = models.PositiveSmallIntegerField(default=1)
+    class ContentType(models.IntegerChoices):
+        RAW_TEXT = 10, _("Raw Text")
+        MARKDOWN = 20, _("Markdown")
+        HTML = 30, _("HTML")
+        NOTEBOOK = 40, _("Jupyter Notebook")
+    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)
+
+    order = models.PositiveSmallIntegerField()
 
     class Meta:
         ordering = ('order',)
+        unique_together = ('problem', 'order')
 
 
 class ProblemCode(Code):
@@ -106,7 +116,6 @@ class Submission(models.Model):
         IMAGE_PUSH_FAILED = 60, _("Image Push Failed")
 
         SUBMISSION_READY = 100, _("Submission Ready")
-
     status = models.PositiveSmallIntegerField(choices=SubmissionStatus.choices, default=SubmissionStatus.WAITING_IN_QUEUE)
 
     runs = models.ManyToManyField('Run', through='GatheredSubmission')  # A shortcut for simplicity
@@ -160,8 +169,9 @@ class Run(models.Model):
 
         RUN_FAILED = 90, _("Run Failed")
         RUN_SUCCESSFUL = 100, _("Run Successful")
-
     status = models.PositiveSmallIntegerField(choices=RunStatus.choices, default=RunStatus.PREPARING)
+
+    gathered_submissions = models.ManyToManyField(Submission, through='GatheredSubmission', blank=True)  # For Django admin
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
@@ -178,7 +188,7 @@ class Run(models.Model):
                 'kind': 'Room',
                 'metadata': {
                     'name': 'room-%d' % self.id,
-                    'namespace': 'hub-system'
+                    'namespace': settings.HUB_NAMESPACE
                 },
                 'spec': {
                     'id': str(self.id),
@@ -212,14 +222,16 @@ class Run(models.Model):
             }
 
             apps.get_app_config("problem").queue.push(dumps(manifest), settings.ROOM_QUEUE_NAME)
+            self.status = self.RunStatus.POD_BUILD_JOB_ENQUEUED
 
             super().save(**kwargs)
 
 
 class GatheredSubmission(models.Model):
     submission = models.ForeignKey(Submission, models.CASCADE)
-    role = models.CharField(max_length=50, default='agent')
     run = models.ForeignKey(Run, models.CASCADE)
+
+    role = models.CharField(max_length=50, default='agent')
 
 
 class Score(models.Model):
@@ -229,3 +241,7 @@ class Score(models.Model):
 
     class Meta:
         unique_together = ('gathered_submission', 'definition')
+
+    def owner(self):
+        return self.gathered_submission.submission.problem_enter.team.name
+    owner.short_description = 'The name of the team this score belongs to'

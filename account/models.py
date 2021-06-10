@@ -1,12 +1,31 @@
+import re
 import unicodedata
 
-from django.db import models
-from django.contrib.auth.models import PermissionsMixin, UnicodeUsernameValidator, UserManager
-from django.conf import settings
+from django.contrib.auth.models import PermissionsMixin
+from django.core import validators
+from django.utils.deconstruct import deconstructible
+from django.core import exceptions
 from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
 from taggit.models import TagBase, CommonGenericTaggedItemBase
+
+from .enums import *
+
+
+@deconstructible
+class ASCIIUsernameValidator(validators.RegexValidator):
+    regex = r'^[\w.][\w.-]*[\w-]\Z'
+    message = _(
+        'Enter a valid username. This value must be longer than 2 characters and may contain only English letters, '
+        'numbers, and ./-/_ characters but cannot start with a "-" or end with a ".".'
+    )
+    flags = re.ASCII
+
+
+def validate_username_for_gitlab(value: str):
+    if value.endswith('.git') or value.endswith('.atom'):
+        raise exceptions.ValidationError(_('Enter a valid username. This value cannot end in ".git" or ".atom".'))
 
 
 class AccountTag(TagBase):
@@ -26,21 +45,30 @@ class TaggedAccount(CommonGenericTaggedItemBase):
 
 class User(PermissionsMixin):
     fusion_user_id = models.CharField(max_length=50, primary_key=True)
-    gitlab_user_id = models.IntegerField(unique=True, null=True, blank=True)
+    gitlab_user_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
+    discourse_user_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
     username = models.CharField(
         _('username'),
         max_length=55,
         unique=True,
-        help_text=_('Required. 55 characters or fewer. Letters, digits and @/./+/-/_ only.'),
-        validators=[UnicodeUsernameValidator()],
+        help_text=_('Required. 2 to 55 characters. Letters, digits and ./-/_ only.'),
+        validators=[ASCIIUsernameValidator(), validate_username_for_gitlab],
         error_messages={
-            'unique': _("A user with that username already exists.")
+            'unique': _("A user with that username already exists!")
         }
     )
     email = models.EmailField(_('email'), unique=True)
 
     full_name = models.CharField(_('full name'), max_length=100)
-    profile_picture = models.ImageField(upload_to='profile', default='profile/no_avatar.png')
+    full_name_english = models.CharField(_('English full name'), max_length=100, null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile', default='profile/no_avatar.png', null=True, blank=True)
+    university = models.CharField(max_length=100, null=True, blank=True)
+    city = models.CharField(max_length=60, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
+    gender = models.PositiveSmallIntegerField(choices=((1, _("Male")), (2, _("Female"))), null=True, blank=True)
+    date_of_birth = models.DateTimeField(null=True, blank=True)
+    website = models.URLField(max_length=255, null=True, blank=True)
+    biography = models.CharField(max_length=200, null=True, blank=True)
 
     tags = TaggableManager(through=TaggedAccount, blank=True)
 
@@ -60,8 +88,7 @@ class User(PermissionsMixin):
             'Unselect this instead of deleting accounts.'
         )
     )
-
-    objects = UserManager()
+    is_verified = models.BooleanField(default=False, help_text=_("Designates whether this user is a verified person."))
 
     REQUIRED_FIELDS = []
 
@@ -83,9 +110,6 @@ class User(PermissionsMixin):
     def get_username(self):
         """Return the username for this User."""
         return getattr(self, self.USERNAME_FIELD)
-
-    def get_gitlab_user(self):
-        return settings.GITLAB_CLIENT.users.get(self.gitlab_user_id)
 
     def clean(self):
         setattr(self, self.USERNAME_FIELD, self.normalize_username(self.get_username()))
@@ -120,8 +144,25 @@ class User(PermissionsMixin):
     def normalize_username(cls, username):
         return unicodedata.normalize('NFKC', username) if isinstance(username, str) else username
 
-    def __str__(self):
-        return "User: " + self.get_username()
+    def check_password(self, raw_password):
+        return False  # FIXME Django default authentication backend uses this and I don't know a better workaround
+
+
+class SocialLink(models.Model):
+    user = models.ForeignKey(User, models.CASCADE, related_name='links')
+
+    title = models.CharField(max_length=30)
+    link = models.URLField(max_length=255)
+
+
+class Report(models.Model):
+    reporter = models.ForeignKey(User, models.CASCADE, related_name='reports_made')
+    reported = models.ForeignKey(User, models.CASCADE, related_name='reports_received')
+
+    subject = models.CharField(max_length=100)
+    description = models.TextField()
+
+    date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
 
 
 class Trust(models.Model):
@@ -132,55 +173,26 @@ class Trust(models.Model):
         unique_together = ('truster', 'trusted')
 
 
-class TeamManager(models.Manager):
-    def create(self, name, image, creator, members=None):
-        if members is None:
-            members = []
-
-        team = super().create(name=name, image=image, creator=creator)
-
-        team.member_set.create(user=creator, status=Member.MembershipStatus.MEMBER)
-        for member in members:
-            if creator.trusted_by.filter(truster=member).exists():
-                team.member_set.create(user=member, status=Member.MembershipStatus.MEMBER)
-            else:
-                team.inviterequest_set.create(user=member)
-
-        return team
-
-
 class Team(models.Model):
-    creator = models.ForeignKey(User, models.CASCADE)
+    creator = models.ForeignKey(User, models.CASCADE, related_name='teams_created')
 
-    name = models.CharField(max_length=100)
-    image = models.ImageField(upload_to='profile', default='team_profile/no_avatar.png')
+    name = models.CharField(max_length=100, blank=True)
+    image = models.ImageField(upload_to='profile', default='profile/no_team_image.png', null=True, blank=True)
 
+    individual = models.BooleanField(default=True)
     members = models.ManyToManyField(User, through='Member', related_name='teams')
 
     date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
-
-    objects = TeamManager()
 
 
 class Member(models.Model):
     user = models.ForeignKey(User, models.CASCADE)
     team = models.ForeignKey(Team, models.CASCADE)
 
-    class AccessLevel(models.IntegerChoices):  # TODO discuss the different access levels
-        LEADER = 10, _("Leader")
-        SUBMITTER = 20, _("Submitter")
-        MEMBER = 30, _("Member")
-
-    access_level = models.PositiveSmallIntegerField(choices=AccessLevel.choices, default=AccessLevel.MEMBER)
-
-    data_joined = models.DateTimeField(auto_now_add=True)
-
-    class MembershipStatus(models.IntegerChoices):
-        PENDING = 10, _("Pending")
-        MEMBER = 20, _("Member")
-        LEFT = 30, _("Left")
-
+    access_level = models.PositiveSmallIntegerField(choices=MemberAccessLevel.choices, default=MemberAccessLevel.MEMBER)
     status = models.PositiveSmallIntegerField(choices=MembershipStatus.choices, default=MembershipStatus.PENDING)
+
+    date_joined = models.DateTimeField(auto_now_add=True)
 
 
 class InviteRequest(models.Model):
@@ -190,8 +202,8 @@ class InviteRequest(models.Model):
     class InviteRequestStatus(models.IntegerChoices):
         RECEIVED = 10, _("Received")
         SEEN = 20, _("Seen")
-        DENIED = 30, _("Denied")
-        ACCEPTED = 40, _("Accepted")
+        ACCEPTED = 30, _("Accepted")
+        DENIED = 40, _("Denied")
         EXPIRED = 50, _("Expired")
         CLOSED = 60, _("Closed")
 
@@ -205,8 +217,10 @@ class JoinRequest(models.Model):
     class JoinRequestStatus(models.IntegerChoices):
         RECEIVED = 10, _("Received")
         SEEN = 20, _("Seen")
-        DENIED = 30, _("Denied")
-        ACCEPTED = 40, _("Accepted")
+        ACCEPTED = 30, _("Accepted")
+        DENIED = 40, _("Denied")
+        EXPIRED = 50, _("Expired")
+        CLOSED = 60, _("Closed")
 
     status = models.PositiveSmallIntegerField(choices=JoinRequestStatus.choices, default=JoinRequestStatus.RECEIVED)
 
