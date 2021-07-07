@@ -1,4 +1,4 @@
-FROM python:3-slim-buster
+FROM python:slim
 
 # Install deps and build deps
 RUN apt-get -q update && apt-get -qqy install \

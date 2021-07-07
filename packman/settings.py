@@ -12,7 +12,7 @@ else:
 
 # Sentry
 sentry_sdk.init(
-    dsn=v.get('sentry.backend_dsn'),
+    dsn=v.get('sentry.packman_dsn'),
     integrations=[DjangoIntegration()],
     send_default_pii=True
 )
