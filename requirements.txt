@@ -2,7 +2,7 @@ boto3==1.17.91
 Django==3.2.4
 django-taggit==1.4.0
 jupyter==1.0.0
-Pillow==8.2.0
+Pillow==8.3.2
 psycopg2-binary==2.8.6
 python-gitlab==2.7.1
 PyYaml==5.4.1
