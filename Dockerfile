@@ -1,8 +1,7 @@
 FROM python:slim
 
 # Install deps and build deps
-RUN apt-get -q update && apt-get -qqy install \
-    git apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+RUN apt-get -q update && apt-get -qqy install libpq-dev gcc git apt-transport-https ca-certificates curl gnupg-agent software-properties-common && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 RUN add-apt-repository \
