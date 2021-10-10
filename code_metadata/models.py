@@ -1,15 +1,12 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
 
 
 class Code(models.Model):
     project_id = models.PositiveIntegerField()
-
-    date_created = models.DateTimeField(_("date created"), auto_now_add=True, editable=False)
 
     def get_git_repo_path(self):
         return settings.GITLAB_CLIENT.projects.get(self.project_id).path_with_namespace
@@ -20,7 +17,7 @@ class Code(models.Model):
     def get_gitlab_project_url(self):
         return '/'.join((settings.GITLAB_URL, self.get_git_repo_path()))
 
-    def get_project(self):
+    def get_gitlab_project(self):
         return settings.GITLAB_CLIENT.projects.get(self.project_id)
 
     def change_project_name(self, name):

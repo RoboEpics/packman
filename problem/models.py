@@ -1,19 +1,20 @@
-from json import dumps
+from json import dumps as json_dump
 
-from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from django.apps import apps
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
 from taggit.models import TagBase, GenericTaggedItemBase
 
+from .enums import *
+
 from account.models import Team
 from code_metadata.models import Code
-from dataset.models import Data
+from dataset.models import Data, AbstractFile
 
-from utils import random_path
+from utils import random_path, clients
 
 User = get_user_model()
 
@@ -43,26 +44,35 @@ class Problem(models.Model):
     thumbnail = models.ImageField(null=True, blank=True)
     cover_image = models.ImageField(null=True, blank=True)
 
-    gimulator_tag = models.CharField(max_length=40, null=True, blank=True)
-    number_of_players = models.PositiveIntegerField(null=True, blank=True)
+    repository_mode = models.PositiveSmallIntegerField(choices=RepositoryMode.choices, default=RepositoryMode.ON_WITH_NOTEBOOK)
+
+    evaluation_mode = models.PositiveSmallIntegerField(choices=EvaluationMode.choices, default=EvaluationMode.ON_AUTO)
+
+    code_execution = models.BooleanField(default=False)
+
+    gimulator_tag = models.CharField(max_length=50, default='staging')
+    number_of_players = models.PositiveIntegerField(null=True, blank=True)  # FIXME use mongodb
 
     datasets = models.ManyToManyField(Data, blank=True)
 
+    submission_file_name = models.CharField(max_length=255, null=True, blank=True)
     output_volume_size = models.PositiveIntegerField(null=True, blank=True)
-    resource_cpu_limit = models.FloatField(default=1.)
-    resource_memory_limit = models.PositiveIntegerField(default=256)
-    resource_ephemeral_limit = models.PositiveIntegerField(default=0)
+
+    default_resource_cpu_limit = models.FloatField(default=1.)  # TODO separate evaluator and user code resources
+    default_resource_memory_limit = models.PositiveIntegerField(default=256)
+    default_resource_ephemeral_limit = models.PositiveIntegerField(default=0)
+
+    gimulator_resource_cpu_limit = models.FloatField(default=1.)
+    gimulator_resource_memory_limit = models.PositiveIntegerField(default=256)
+    gimulator_resource_ephemeral_limit = models.PositiveIntegerField(default=0)
 
     is_public = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)
     date_published = models.DateTimeField(_('date published'), null=True, blank=True)
 
-    date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
+    gitlab_group_id = models.PositiveIntegerField(null=True, blank=True)
 
     tags = TaggableManager(blank=True)
-
-    class Meta:
-        ordering = ("-date_created",)
 
 
 class ProblemText(models.Model):
@@ -76,6 +86,7 @@ class ProblemText(models.Model):
         MARKDOWN = 20, _("Markdown")
         HTML = 30, _("HTML")
         NOTEBOOK = 40, _("Jupyter Notebook")
+        FORM = 50, _("Form")
     content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)
 
     order = models.PositiveSmallIntegerField()
@@ -91,10 +102,11 @@ class ProblemCode(Code):
     tags = TaggableManager(through=TaggedProblemCode, blank=True)
 
 
-class ProblemEnter(Code):
+class ProblemEnter(models.Model):
     team = models.ForeignKey(Team, models.CASCADE)
     problem = models.ForeignKey(Problem, models.CASCADE, related_name='submitters')
 
+    code = models.OneToOneField(Code, models.CASCADE, null=True, blank=True)
     notebook_file_id = models.CharField(max_length=100, null=True, blank=True)
 
 
@@ -102,7 +114,7 @@ class Submission(models.Model):
     submitter = models.ForeignKey(User, models.CASCADE)
     problem_enter = models.ForeignKey(ProblemEnter, models.CASCADE)
 
-    reference = models.CharField(max_length=41)
+    reference = models.CharField(max_length=41, null=True, blank=True)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")
@@ -120,39 +132,48 @@ class Submission(models.Model):
 
     runs = models.ManyToManyField('Run', through='GatheredSubmission')  # A shortcut for simplicity
 
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    class Meta:
-        ordering = ("-date_created",)
-        unique_together = ('problem_enter', 'reference')
+    def clean(self):
+        if self.problem_enter.problem.repository_mode != RepositoryMode.OFF and Submission.objects.filter(problem_enter=self.problem_enter, reference=self.reference).exclude(pk=self.pk).exists():
+            raise ValidationError(_("You cannot submit with the same commit reference you have submitted before!"), code='invalid')
 
     def save(self, *args, **kwargs):
+        self.clean()
+
         problem = self.problem_enter.problem
-        if not problem.gimulator_tag:
+        if not problem.code_execution:
             self.status = Submission.SubmissionStatus.SUBMISSION_READY
 
         super().save(*args, **kwargs)
 
+        if not problem.code_execution and problem.output_volume_size:
+            minio = clients.minio_client
+            prefix = str(self.problem_enter_id) + '/'
+            files = set(map(lambda f: f.object_name, minio.list_objects_v2(settings.S3_TEMP_RESULT_BUCKET_NAME, prefix=prefix)))
+            for file in files:
+                minio.copy_object(settings.S3_RESULT_BUCKET_NAME, "%s/%s" % (str(self.id), file.lstrip(prefix)), '%s/%s' % (settings.S3_TEMP_RESULT_BUCKET_NAME, file))
+
+            errors = list(minio.remove_objects(settings.S3_TEMP_RESULT_BUCKET_NAME, files))
+            if errors:
+                raise ValidationError(list(map(lambda error: ValidationError(_("Error occurred when deleting object %(object)s"), code='delete_error', params={'object': str(error)}), errors)))
+
         if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
-            if problem.gimulator_tag:
+            if problem.code_execution:
                 # Send the submission to builder queue
-                apps.get_app_config("problem").queue.push(dumps({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
-        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.number_of_players is None:
+                clients.queue_client.push(json_dump({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
+        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
             run = Run.objects.create(owner=self.submitter, problem=problem)
             run.gatheredsubmission_set.create(submission=self)
-            run.score_definitions.add(1)
             run.status = Run.RunStatus.READY
             run.save()
 
     def generate_image_name(self):
         problem_enter = self.problem_enter
-        return settings.RESULT_ONLY_IMAGE_PATH if not problem_enter.problem.gimulator_tag else "%s:%d" % (problem_enter.get_git_repo_path().lower(), self.id)
+        return settings.RESULT_ONLY_IMAGE_PATH if not problem_enter.problem.code_execution else "%s:%d" % (problem_enter.code.get_git_repo_path().lower(), self.id)
 
 
 class Run(models.Model):
     owner = models.ForeignKey(User, models.CASCADE)
     problem = models.ForeignKey(Problem, models.CASCADE)  # A shortcut for efficiency
-    score_definitions = models.ManyToManyField(ScoreDefinition, blank=True)
 
     class RunStatus(models.IntegerChoices):
         PREPARING = 10, _("Preparing")
@@ -173,12 +194,7 @@ class Run(models.Model):
 
     gathered_submissions = models.ManyToManyField(Submission, through='GatheredSubmission', blank=True)  # For Django admin
 
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    class Meta:
-        ordering = ("-date_created",)
-
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs):
         super().save(**kwargs)
 
         if self.status == self.RunStatus.READY:
@@ -213,15 +229,15 @@ class Run(models.Model):
                                 {'name': 'S3_ENDPOINT_URL', 'value': settings.S3_ENDPOINT_URL.split('//')[1]},
                                 {'name': 'S3_ACCESS_KEY_ID', 'value': settings.S3_ACCESS_KEY_ID},
                                 {'name': 'S3_SECRET_ACCESS_KEY', 'value': settings.S3_SECRET_ACCESS_KEY},
-                                {'name': 'S3_TEMP_RESULT_BUCKET_NAME', 'value': settings.S3_TEMP_RESULT_BUCKET_NAME},
-                                {'name': 'S3_PATH_PREFIX', 'value': f'{str(gathered_submission.submission.problem_enter_id)}/'}
-                            ] if gathered_submission.submission.problem_enter.problem.number_of_players is None else []
+                                {'name': 'S3_RESULT_BUCKET_NAME', 'value': settings.S3_RESULT_BUCKET_NAME},
+                                {'name': 'S3_PATH_PREFIX', 'value': str(gathered_submission.submission_id) + '/'}
+                            ] if self.problem.code_execution is False else []
                         } for gathered_submission in self.gatheredsubmission_set.all()
                     ]
                 }
             }
 
-            apps.get_app_config("problem").queue.push(dumps(manifest), settings.ROOM_QUEUE_NAME)
+            clients.queue_client.push(json_dump(manifest), settings.ROOM_QUEUE_NAME)
             self.status = self.RunStatus.POD_BUILD_JOB_ENQUEUED
 
             super().save(**kwargs)

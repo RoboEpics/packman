@@ -1,13 +1,11 @@
 from django.db import models
 from django.conf import settings
-from django.apps import apps
 from django.utils.translation import gettext_lazy as _
 
 from taggit.managers import TaggableManager
 
 from account.models import User
-
-from utils import random_path
+from utils import random_path, clients
 
 
 class Dataset(models.Model):
@@ -21,13 +19,6 @@ class Dataset(models.Model):
     cover_image = models.ImageField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
 
-    class ContentType(models.IntegerChoices):
-        RAW_TEXT = 10, _("Raw Text")
-        MARKDOWN = 20, _("Markdown")
-        HTML = 30, _("HTML")
-        NOTEBOOK = 40, _("Jupyter Notebook")
-    content_type = models.PositiveSmallIntegerField(choices=ContentType.choices, default=ContentType.RAW_TEXT)
-
     class AccessLevel(models.IntegerChoices):
         PUBLIC = 10, _("Public")
         PRIVATE = 20, _("Private")
@@ -37,8 +28,6 @@ class Dataset(models.Model):
     upvotes = models.ManyToManyField(User, related_name='upvoted_datasets', blank=True)
 
     tags = TaggableManager(blank=True)
-
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -51,31 +40,74 @@ class Data(models.Model):
     version = models.CharField(max_length=20)
 
     description = models.TextField(null=True, blank=True)
-    license = models.TextField(null=True, blank=True)
 
     class DataStatus(models.IntegerChoices):
         UPLOADING = 10, _("Uploading to temporary storage")
         TRANSFER = 20, _("Transferring to main storage")
         FINALIZING = 30, _("Finalizing")
         READY = 40, _("Ready")
-
     status = models.PositiveSmallIntegerField(choices=DataStatus.choices, default=DataStatus.TRANSFER)
-
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
 
     class Meta:
         ordering = ('-date_created',)
         unique_together = ('dataset', 'version')
 
+    @property
+    def temp_bucket_path(self):
+        return str(self.dataset_id)
 
-class File(models.Model):
-    data = models.ForeignKey(Data, models.CASCADE)
-    file_name = models.CharField(max_length=255)
-    file_id = models.CharField(max_length=100)
+    @property
+    def is_public(self):
+        return self.dataset.access_level == Dataset.AccessLevel.PUBLIC
+
+    @property
+    def pvc_name(self):
+        return 'dataset-%d-version-%d' % (self.dataset_id, self.id)
+
+
+class AbstractFile(models.Model):
+    filename = models.CharField(max_length=255)
+    path = models.CharField(max_length=255)
+    google_drive_file_id = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    class CustomMeta:
+        parent_field_name = None
+        bucket_name = None
+        temp_bucket_name = None
+        google_drive_access = False
+
+    def get_full_path(self):
+        return "%s/%s" % (self.path, self.filename)
 
     def get_url(self):
-        return apps.get_app_config("dataset").minio_client.presigned_get_object(settings.S3_TEMP_DATASET_BUCKET_NAME, "%d/%s" % (self.data.dataset_id, self.file_name))
-        # return apps.get_app_config("dataset").google_drive_client.files().get(fileId=self.file_id, fields='webContentLink').execute()['webContentLink']
+        return clients.minio_client.presigned_get_object(self.CustomMeta.bucket_name, self.get_full_path())
+
+    def delete(self, **kwargs):
+        drive_file_id = self.google_drive_file_id
+
+        collection = super().delete(**kwargs)
+
+        # Delete file from Google Drive
+        if drive_file_id:
+            clients.google_drive_client.files().delete(fileId=drive_file_id).execute()
+
+        # Delete file from Minio
+        clients.minio_client.remove_object(self.CustomMeta.bucket_name, "%s/%s" % (self.path, self.filename))
+
+        return collection
 
     def __str__(self):
-        return self.file_name
+        return self.filename
+
+
+class DatasetFile(AbstractFile):
+    data = models.ForeignKey(Data, models.CASCADE, related_name='file_set')
+
+    class CustomMeta(AbstractFile.CustomMeta):
+        parent_field_name = 'data'
+        bucket_name = settings.S3_DATASET_BUCKET_NAME
+        temp_bucket_name = settings.S3_TEMP_DATASET_BUCKET_NAME
+        google_drive_access = True
