@@ -145,11 +145,7 @@ class Submission(models.Model):
 
         super().save(*args, **kwargs)
 
-        if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
-            if problem.code_execution:
-                # Send the submission to builder queue
-                clients.queue_client.push(json_dump({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
-        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
+        if self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
             run = Run.objects.create(owner=self.submitter, problem=problem)
             run.gatheredsubmission_set.create(submission=self)
             run.status = Run.RunStatus.READY
