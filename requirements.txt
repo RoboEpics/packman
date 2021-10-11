@@ -8,7 +8,7 @@ python-gitlab==2.10.1
 PyYaml==5.4.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@881cd8159131596d65e51605cf25993de2a523ad#egg=rabbitmq_client
 -e git://github.com/Syfract/simple-queue-client.git@e93d2c2a03d162f69b302558512fe0ed0e5d1338#egg=simple_queue_client
--e git://github.com/AliMirlou/repo2docker.git@d172f211066cfa782c10ced4ec8ec153f3e644ea#egg=jupyter-repo2docker
+-e git://github.com/AliMirlou/repo2docker.git@76f307fd76e98159e574c106f01d54df6cc571bd#egg=jupyter-repo2docker
 sentry-sdk==1.4.3
 vyper-config==1.0.0
 wheel==0.37.0
