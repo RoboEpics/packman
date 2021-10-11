@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
 from account.models import User
-from utils import random_path, clients
+from utils import random_path
 
 
 class Dataset(models.Model):
@@ -81,26 +81,6 @@ class AbstractFile(models.Model):
 
     def get_full_path(self):
         return "%s/%s" % (self.path, self.filename)
-
-    def get_url(self):
-        return clients.minio_client.presigned_get_object(self.CustomMeta.bucket_name, self.get_full_path())
-
-    def delete(self, **kwargs):
-        drive_file_id = self.google_drive_file_id
-
-        collection = super().delete(**kwargs)
-
-        # Delete file from Google Drive
-        if drive_file_id:
-            clients.google_drive_client.files().delete(fileId=drive_file_id).execute()
-
-        # Delete file from Minio
-        clients.minio_client.remove_object(self.CustomMeta.bucket_name, "%s/%s" % (self.path, self.filename))
-
-        return collection
-
-    def __str__(self):
-        return self.filename
 
 
 class DatasetFile(AbstractFile):

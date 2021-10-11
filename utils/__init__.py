@@ -2,8 +2,6 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 from django.utils.module_loading import import_string
 
-from minio import Minio
-
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -21,8 +19,6 @@ def empty_roles() -> dict:
 
 class ClientClass:
     queue_client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_SERVER_API_URL)
-
-    minio_client = Minio(settings.MINIO_STORAGE_ENDPOINT, settings.MINIO_STORAGE_ACCESS_KEY, settings.MINIO_STORAGE_SECRET_KEY)
 
     @property
     def google_drive_client(self):
