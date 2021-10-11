@@ -115,10 +115,10 @@ def handle_new_message(channel, method_frame, header_frame, result):
             push_image_to_registry(image_name)
 
             logger.debug("Successfully pushed Docker image for ProblemCode %d!" % code.id)
-        except ChildProcessError:
+        except ChildProcessError as e:
             capture_exception()
 
-            logger.error("Something went wrong while pushing Docker image for ProblemCode %d!" % code.id)
+            logger.error("Something went wrong while pushing Docker image for ProblemCode %d: %s!" % (code.id, str(e)))
 
         channel.basic_ack(method_frame.delivery_tag)
         # client.delete(result)
@@ -171,17 +171,16 @@ def handle_new_message(channel, method_frame, header_frame, result):
         push_image_to_registry(image_name)
 
         submission.status = Submission.SubmissionStatus.SUBMISSION_READY
-        submission.selected = True
         submission.save()
 
         logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
-    except ChildProcessError:
+    except ChildProcessError as e:
         capture_exception()
 
         submission.status = Submission.SubmissionStatus.IMAGE_PUSH_FAILED
         submission.save()
 
-        logger.error("Something went wrong while pushing Docker image for submission %d!" % submission.id)
+        logger.error("Something went wrong while pushing Docker image for submission %d: %s!" % (submission.id, str(e)))
 
         return
 
