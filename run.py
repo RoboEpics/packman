@@ -146,7 +146,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
     submission.save()
 
     try:
-        image_name, run_command = create_docker_image(enter.get_git_repo_path(), submission.reference, submission.generate_image_name())
+        image_name, run_command = create_docker_image(enter.code.get_git_repo_path(), submission.reference, submission.generate_image_name())
     except Exception:
         capture_exception()
         logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
