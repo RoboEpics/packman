@@ -179,6 +179,8 @@ class Run(models.Model):
 
     gathered_submissions = models.ManyToManyField(Submission, through='GatheredSubmission', blank=True)  # For Django admin
 
+    date_created = models.DateTimeField(auto_now_add=True)
+
     def save(self, *args, **kwargs):
         super().save(**kwargs)
 
