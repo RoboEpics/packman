@@ -29,6 +29,9 @@ DATABASES = {
     }
 }
 
+# Hub
+HUB_NAMESPACE = v.get('hub.namespace')
+
 # Gitlab
 GITLAB_ENABLED = v.get('gitlab.enabled')
 GITLAB_ID = v.get('gitlab.id')
@@ -50,9 +53,25 @@ QUEUE_SERVER_PASSWORD = v.get('queue.password')
 QUEUE_SERVER_API_URL = f"amqp://{'%s:%s@' % (QUEUE_SERVER_USERNAME, QUEUE_SERVER_PASSWORD) if QUEUE_SERVER_USERNAME else ''}{QUEUE_SERVER_HOST}"
 DATASET_FILLER_QUEUE_NAME = v.get('queue.dataset_filler_queue_name')
 SUBMISSION_BUILDER_QUEUE_NAME = v.get('queue.submission_builder_queue_name')
+ROOM_QUEUE_NAME = v.get('queue.room_queue_name')
+
+# S3
+S3_ACCESS_KEY_ID = v.get('s3.access_key_id')
+S3_SECRET_ACCESS_KEY = v.get('s3.secret_access_key')
+S3_ENDPOINT_URL = v.get('s3.endpoint_url')
+S3_TEMP_DATASET_BUCKET_NAME = v.get('s3.temp_dataset_bucket_name')
+S3_DATASET_BUCKET_NAME = v.get('s3.dataset_bucket_name')
+S3_EVALUATION_FILES_BUCKET_NAME = v.get('s3.evaluation_files_bucket_name')
+S3_SAMPLE_SUBMISSION_BUCKET_NAME = v.get('s3.sample_submission_bucket_name')
+S3_TEMP_RESULT_BUCKET_NAME = v.get('s3.temp_result_bucket_name')
+S3_RESULT_BUCKET_NAME = v.get('s3.result_bucket_name')
+S3_ROLES_BUCKET_NAME = v.get('s3.roles_bucket_name')
+S3_PROBLEM_SETTINGS_BUCKET_NAME = v.get('s3.problem_settings_bucket_name')
+S3_LOG_BUCKET_NAME = v.get('s3.log_bucket_name')
 
 # Docker Registry
 DOCKER_REGISTRY_HOST = v.get('registry.host')
+RESULT_ONLY_IMAGE_PATH = v.get('registry.result_only_image_path')
 
 # Logging
 LOGGING = {
