@@ -12,7 +12,7 @@ from .enums import *
 
 from account.models import Team
 from code_metadata.models import Code
-from dataset.models import Data, AbstractFile
+from dataset.models import Data
 
 from utils import random_path, clients
 
@@ -51,14 +51,14 @@ class Problem(models.Model):
     code_execution = models.BooleanField(default=False)
 
     gimulator_tag = models.CharField(max_length=50, default='staging')
-    number_of_players = models.PositiveIntegerField(null=True, blank=True)  # FIXME use mongodb
+    number_of_players = models.PositiveIntegerField(null=True, blank=True)
 
     datasets = models.ManyToManyField(Data, blank=True)
 
     submission_file_name = models.CharField(max_length=255, null=True, blank=True)
     output_volume_size = models.PositiveIntegerField(null=True, blank=True)
 
-    default_resource_cpu_limit = models.FloatField(default=1.)  # TODO separate evaluator and user code resources
+    default_resource_cpu_limit = models.FloatField(default=1.)
     default_resource_memory_limit = models.PositiveIntegerField(default=256)
     default_resource_ephemeral_limit = models.PositiveIntegerField(default=0)
 

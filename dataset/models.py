@@ -63,31 +63,3 @@ class Data(models.Model):
     @property
     def pvc_name(self):
         return 'dataset-%d-version-%d' % (self.dataset_id, self.id)
-
-
-class AbstractFile(models.Model):
-    filename = models.CharField(max_length=255)
-    path = models.CharField(max_length=255)
-    google_drive_file_id = models.CharField(max_length=100, null=True, blank=True)
-
-    class Meta:
-        abstract = True
-
-    class CustomMeta:
-        parent_field_name = None
-        bucket_name = None
-        temp_bucket_name = None
-        google_drive_access = False
-
-    def get_full_path(self):
-        return "%s/%s" % (self.path, self.filename)
-
-
-class DatasetFile(AbstractFile):
-    data = models.ForeignKey(Data, models.CASCADE, related_name='file_set')
-
-    class CustomMeta(AbstractFile.CustomMeta):
-        parent_field_name = 'data'
-        bucket_name = settings.S3_DATASET_BUCKET_NAME
-        temp_bucket_name = settings.S3_TEMP_DATASET_BUCKET_NAME
-        google_drive_access = True
