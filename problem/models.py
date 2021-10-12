@@ -41,9 +41,6 @@ class Problem(models.Model):
     short_description = models.CharField(max_length=255)
     path = models.CharField(max_length=255, unique=True, default=random_path)
 
-    thumbnail = models.ImageField(null=True, blank=True)
-    cover_image = models.ImageField(null=True, blank=True)
-
     repository_mode = models.PositiveSmallIntegerField(choices=RepositoryMode.choices, default=RepositoryMode.ON_WITH_NOTEBOOK)
 
     evaluation_mode = models.PositiveSmallIntegerField(choices=EvaluationMode.choices, default=EvaluationMode.ON_AUTO)

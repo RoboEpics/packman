@@ -15,9 +15,6 @@ class Dataset(models.Model):
 
     path = models.CharField(max_length=255, unique=True, default=random_path)
 
-    cover_image = models.ImageField(null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-
     class AccessLevel(models.IntegerChoices):
         PUBLIC = 10, _("Public")
         PRIVATE = 20, _("Private")

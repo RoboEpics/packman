@@ -60,15 +60,6 @@ class User(PermissionsMixin):
     email = models.EmailField(_('email'), unique=True)
 
     full_name = models.CharField(_('full name'), max_length=100)
-    full_name_english = models.CharField(_('English full name'), max_length=100, null=True, blank=True)
-    profile_picture = models.ImageField(upload_to='profile', default='profile/no_avatar.png', null=True, blank=True)
-    university = models.CharField(max_length=100, null=True, blank=True)
-    city = models.CharField(max_length=60, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
-    gender = models.PositiveSmallIntegerField(choices=((1, _("Male")), (2, _("Female"))), null=True, blank=True)
-    date_of_birth = models.DateTimeField(null=True, blank=True)
-    website = models.URLField(max_length=255, null=True, blank=True)
-    biography = models.CharField(max_length=200, null=True, blank=True)
 
     tags = TaggableManager(through=TaggedAccount, blank=True)
 
@@ -148,36 +139,10 @@ class User(PermissionsMixin):
         return False
 
 
-class SocialLink(models.Model):
-    user = models.ForeignKey(User, models.CASCADE, related_name='links')
-
-    title = models.CharField(max_length=30)
-    link = models.URLField(max_length=255)
-
-
-class Report(models.Model):
-    reporter = models.ForeignKey(User, models.CASCADE, related_name='reports_made')
-    reported = models.ForeignKey(User, models.CASCADE, related_name='reports_received')
-
-    subject = models.CharField(max_length=100)
-    description = models.TextField()
-
-    date_created = models.DateTimeField(_('date created'), auto_now_add=True, editable=False)
-
-
-class Trust(models.Model):
-    truster = models.ForeignKey(User, models.CASCADE, related_name='trusting')
-    trusted = models.ForeignKey(User, models.CASCADE, related_name='trusted_by')
-
-    class Meta:
-        unique_together = ('truster', 'trusted')
-
-
 class Team(models.Model):
     creator = models.ForeignKey(User, models.CASCADE, related_name='teams_created')
 
     name = models.CharField(max_length=100, blank=True)
-    image = models.ImageField(upload_to='profile', default='profile/no_team_image.png', null=True, blank=True)
 
     individual = models.BooleanField(default=True)
     members = models.ManyToManyField(User, through='Member', related_name='teams')
@@ -193,43 +158,3 @@ class Member(models.Model):
     status = models.PositiveSmallIntegerField(choices=MembershipStatus.choices, default=MembershipStatus.PENDING)
 
     date_joined = models.DateTimeField(auto_now_add=True)
-
-
-class InviteRequest(models.Model):
-    team = models.ForeignKey(Team, models.CASCADE)
-    user = models.ForeignKey(User, models.CASCADE)
-
-    class InviteRequestStatus(models.IntegerChoices):
-        RECEIVED = 10, _("Received")
-        SEEN = 20, _("Seen")
-        ACCEPTED = 30, _("Accepted")
-        DENIED = 40, _("Denied")
-        EXPIRED = 50, _("Expired")
-        CLOSED = 60, _("Closed")
-
-    status = models.PositiveSmallIntegerField(choices=InviteRequestStatus.choices, default=InviteRequestStatus.RECEIVED)
-
-
-class JoinRequest(models.Model):
-    user = models.ForeignKey(User, models.CASCADE)
-    team = models.ForeignKey(Team, models.CASCADE)
-
-    class JoinRequestStatus(models.IntegerChoices):
-        RECEIVED = 10, _("Received")
-        SEEN = 20, _("Seen")
-        ACCEPTED = 30, _("Accepted")
-        DENIED = 40, _("Denied")
-        EXPIRED = 50, _("Expired")
-        CLOSED = 60, _("Closed")
-
-    status = models.PositiveSmallIntegerField(choices=JoinRequestStatus.choices, default=JoinRequestStatus.RECEIVED)
-
-
-class TeamEventHistory(models.Model):
-    team = models.ForeignKey(Team, models.CASCADE)
-
-    text = models.CharField(max_length=255)
-    date_created = models.DateTimeField(auto_now_add=True, editable=False)
-
-    class Meta:
-        ordering = ('-date_created',)
