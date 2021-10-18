@@ -1,18 +1,19 @@
 FROM python:3.9-slim
 
 # Install deps and build deps
-RUN apt-get -q update && apt-get -qqy install libpq-dev gcc git apt-transport-https ca-certificates curl gnupg-agent software-properties-common
-
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
-RUN add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/debian \
-   $(lsb_release -cs) \
-   stable"
-RUN apt-get -q update && apt-get -qqy install docker-ce-cli && rm -rf /var/lib/apt/lists/*
+RUN set -eux \
+        && apt-get -q update \
+        && apt-get -qqy install libpq-dev gcc git apt-transport-https ca-certificates curl gnupg-agent software-properties-common \
+        && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
+        && add-apt-repository \
+              "deb [arch=amd64] https://download.docker.com/linux/debian \
+               $(lsb_release -cs) \
+               stable" \
+        && apt-get -qqy install docker-ce-cli && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 ENV USER worker
-RUN groupadd -g 1001 $USER && useradd -u 1001 -g $USER -s /bin/bash -m $USER
+RUN addgroup --gid 1001 $USER && adduser -u 1001 --gid 1001 --shell /bin/sh --disabled-password --gecos "" $USER
 WORKDIR /home/$USER
 USER $USER
 
