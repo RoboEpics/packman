@@ -9,7 +9,9 @@ RUN set -eux \
               "deb [arch=amd64] https://download.docker.com/linux/debian \
                $(lsb_release -cs) \
                stable" \
-        && apt-get -qqy install docker-ce-cli && rm -rf /var/lib/apt/lists/*
+        && apt-get -q update \
+        && apt-get -qqy install docker-ce-cli \
+        && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 ENV USER worker
