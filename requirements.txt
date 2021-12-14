@@ -1,11 +1,11 @@
-boto3==1.20.20
-Django==3.2.9
+boto3==1.20.24
+Django==3.2.10
 django-taggit==2.0.0
 jupyter==1.0.0
 psycopg2==2.9.2
 python-gitlab==2.10.1
 -e git://github.com/Syfract/simple-rabbitmq-client.git@09b10f9a37e7242a402510576d750905ffe17b76#egg=rabbitmq_client
 -e git://github.com/AliMirlou/repo2docker.git@1983c4a8d441081c3c82f26c984c415f8ca58e89#egg=jupyter-repo2docker
-sentry-sdk==1.5.0
+sentry-sdk==1.5.1
 vyper-config==1.0.0
 wheel==0.37.0
