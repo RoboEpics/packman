@@ -11,6 +11,7 @@ RUN set -eux \
                stable" \
         && apt-get -q update \
         && apt-get -qqy install docker-ce-cli \
+        && pip install -U pip \
         && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
