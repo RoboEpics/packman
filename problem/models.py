@@ -10,7 +10,6 @@ from taggit.models import TagBase, GenericTaggedItemBase
 
 from .enums import *
 from .gimulator_models import GimulatorRole
-from .score_calculators import functions
 
 from account.models import Team
 from code_metadata.models import Code
@@ -31,29 +30,12 @@ class TaggedProblemCode(GenericTaggedItemBase):
     tag = models.ForeignKey(ProblemCodeTag, models.CASCADE, related_name="%(app_label)s_%(class)s_items")
 
 
-class ScoreDefinition(models.Model):
-    name = models.CharField(max_length=40, unique=True)
-    description = models.TextField()
-
-
-class SubmissionScoreDefinition(models.Model):
-    name = models.CharField(max_length=40, unique=True)
-    description = models.TextField()
-
-
-class SubmissionScoreCalculator(models.Model):
-    function_title = models.CharField(max_length=40, unique=True)
-    description = models.TextField()
-
-
 class Problem(models.Model):
     owner = models.ForeignKey(User, models.CASCADE)
 
     title = models.CharField(max_length=200)
     short_description = models.CharField(max_length=255)
     path = models.CharField(max_length=255, unique=True, default=random_path)
-
-    submission_score_calculator = models.ForeignKey(SubmissionScoreCalculator, models.CASCADE, null=True, blank=True)  # "null" means no score calculation, and submission scores are probably manually set
 
     repository_mode = models.PositiveSmallIntegerField(choices=RepositoryMode.choices, default=RepositoryMode.ON_WITH_NOTEBOOK)
 
@@ -87,20 +69,6 @@ class Problem(models.Model):
     gitlab_group_id = models.PositiveIntegerField(null=True, blank=True)
 
     tags = TaggableManager(blank=True)
-
-
-class ScoreDefinedInProblem(models.Model):
-    score_definition = models.ForeignKey(ScoreDefinition, models.CASCADE)
-    problem = models.ForeignKey(Problem, models.CASCADE, related_name='score_definitions')
-
-    weight = models.FloatField(default=1.)
-
-
-class SubmissionScoreDefinedInProblem(models.Model):
-    score_definition = models.ForeignKey(SubmissionScoreDefinition, models.CASCADE)
-    problem = models.ForeignKey(Problem, models.CASCADE, related_name='submission_score_definitions')
-
-    weight = models.FloatField(default=1.)
 
 
 class ProblemCode(Code):
@@ -173,45 +141,9 @@ class Submission(models.Model):
             run.status = Run.RunStatus.READY
             run.save()
 
-    def update_submission_score(self):
-        scores = functions[self.problem_enter.problem.submission_score_calculator.function_title](self.gatheredsubmission_set.filter(run__status=Run.RunStatus.RUN_SUCCESSFUL))
-        if scores is None:
-            self.submissionscore_set.all().delete()
-        else:
-            for definition in self.problem_enter.problem.submission_score_definitions.all():
-                self.submissionscore_set.update_or_create(definition=definition, defaults={'value': scores[definition.score_definition.name]})
-
     def generate_image_name(self):
         problem_enter = self.problem_enter
         return settings.RESULT_ONLY_IMAGE_PATH if not problem_enter.problem.code_execution else "%s:%d" % (problem_enter.code.get_git_repo_path().lower(), self.id)
-
-
-class SubmissionScore(models.Model):
-    submission = models.ForeignKey(Submission, models.CASCADE)
-    definition = models.ForeignKey(SubmissionScoreDefinedInProblem, models.CASCADE)
-    value = models.DecimalField(max_digits=20, decimal_places=5)
-
-    class Meta:
-        unique_together = ('submission', 'definition')
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        # Type of "value" is probably "str" and we need to reload it from the database to be able to compare its value
-        del self.value
-
-        problem_enter = self.submission.problem_enter
-        leaderboard = problem_enter.problem.leaderboard_set.first()  # FIXME how to choose a leaderboard?
-        if leaderboard is not None:
-            leaderboard_row_scores = leaderboard.leaderboardrow_set.get_or_create(problem_enter=problem_enter)[0].leaderboardscore_set
-            leaderboard_score = leaderboard_row_scores.filter(score__definition=self.definition)
-            if leaderboard_score.exists():
-                leaderboard_score = leaderboard_score.first()
-                if self.value > leaderboard_score.score.value:
-                    leaderboard_score.score = self
-                    leaderboard_score.save()
-            else:
-                leaderboard_row_scores.create(score=self)
 
 
 class Run(models.Model):
@@ -324,17 +256,3 @@ class GatheredSubmission(models.Model):
     run = models.ForeignKey(Run, models.CASCADE)
 
     role = models.ForeignKey(GimulatorRole, models.CASCADE, null=True, blank=True)
-
-
-class Score(models.Model):
-    gathered_submission = models.ForeignKey(GatheredSubmission, models.CASCADE)
-    definition = models.ForeignKey(ScoreDefinedInProblem, models.CASCADE)
-    value = models.DecimalField(max_digits=20, decimal_places=5)
-
-    class Meta:
-        unique_together = ('gathered_submission', 'definition')
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        self.gathered_submission.submission.update_submission_score()
