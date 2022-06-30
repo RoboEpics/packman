@@ -90,6 +90,7 @@ class Submission(models.Model):
     problem_enter = models.ForeignKey(ProblemEnter, models.CASCADE)
 
     reference = models.CharField(max_length=41, null=True, blank=True)
+    runtime = models.CharField(max_length=50, choices=Runtimes.choices, null=True, blank=True)
 
     class SubmissionStatus(models.IntegerChoices):
         WAITING_IN_QUEUE = 10, _("Waiting In Queue")

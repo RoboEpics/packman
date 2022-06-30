@@ -26,6 +26,7 @@ from problem.models import Submission, ProblemCode
 # from leaderboard.models import SimpleLeaderboard
 
 from buildpacks import *
+from buildpacks import stdin as stdin_buildpacks
 
 buildpacks = [
     DockerBuildPack,
@@ -56,7 +57,7 @@ buildpacks = [
 client = import_string(settings.QUEUE_CLIENT)(settings.QUEUE_SERVER_API_URL)
 
 
-def create_docker_image(gitlab_repo, commit_hash, image_name):
+def create_docker_image(gitlab_repo, commit_hash, image_name, buildpack=None):
     # Create Docker image from git repository using jupyter-repo2docker
     r2d = Repo2Docker()
 
@@ -65,8 +66,12 @@ def create_docker_image(gitlab_repo, commit_hash, image_name):
     r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
     r2d.user_id = 2000
     r2d.user_name = 'jovyan'
-    r2d.buildpacks = buildpacks
-    r2d.default_buildpack = PythonBuildPack
+    if buildpack is None:
+        r2d.buildpacks = buildpacks
+        r2d.default_buildpack = PythonBuildPack
+    else:
+        r2d.buildpacks = []
+        r2d.default_buildpack = buildpack
 
     r2d.initialize()
     r2d.build()
@@ -145,8 +150,12 @@ def handle_new_message(channel, method_frame, header_frame, result):
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
     submission.save()
 
+    buildpack = None
+    if submission.runtime:
+        buildpack = getattr(stdin_buildpacks, submission.runtime, None)
+
     try:
-        image_name, run_command = create_docker_image(enter.code.get_git_repo_path(), submission.reference, submission.generate_image_name())
+        image_name, run_command = create_docker_image(enter.code.get_git_repo_path(), submission.reference, submission.generate_image_name(), buildpack)
     except Exception:
         capture_exception()
         logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
