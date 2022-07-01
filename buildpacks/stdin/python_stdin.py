@@ -10,7 +10,10 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /root
 
-COPY python-tester.sh python-tester.sh
+{% for src, dst in build_script_files|dictsort %}
+COPY {{ src }} {{ dst }}
+{% endfor -%}
+
 COPY src/ .
 
 CMD {{ command }}
