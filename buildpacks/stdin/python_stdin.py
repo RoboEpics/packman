@@ -20,6 +20,11 @@ CMD {{ command }}
 class Python310STDINBuildPack(BaseImage):
     template = TEMPLATE
 
+    def get_build_script_files(self):
+        return {
+            "python-tester.sh": "python-tester.sh",
+        }
+
     def get_command(self):
         """
         Tries to find the project's main method and it's package and returns a command with them to be run.
