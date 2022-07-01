@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /root
 
-COPY stdin/python-tester.sh python-tester.sh
+COPY python-tester.sh python-tester.sh
 COPY src/ .
 
 CMD {{ command }}
