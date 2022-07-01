@@ -2,7 +2,7 @@
 
 run_test() {
   echo "test case: $1"
-  /usr/bin/time -v bash -c "echo $1 | python3 main.py >> \"$OUTPUT_FOLDER/$RESULT_FILE\""
+  /usr/bin/time -v bash -c "echo $1 | python3 \"$ENTRY_FILE\" >> \"$OUTPUT_FOLDER/$RESULT_FILE\""
 }
 
 TEST_CASES=(
