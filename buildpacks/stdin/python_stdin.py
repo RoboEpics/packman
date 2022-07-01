@@ -12,7 +12,7 @@ WORKDIR /root
 
 {% for src, dst in build_script_files|dictsort %}
 COPY {{ src }} {{ dst }}
-chmod +x {{ dst }}
+RUN chmod +x {{ dst }}
 {% endfor -%}
 
 COPY src/ .
