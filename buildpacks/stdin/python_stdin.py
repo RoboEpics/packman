@@ -22,7 +22,7 @@ class Python310STDINBuildPack(BaseImage):
 
     def get_build_script_files(self):
         return {
-            "python-tester.sh": "python-tester.sh",
+            "/home/worker/buildpacks/stdin/python-tester.sh": "python-tester.sh"
         }
 
     def get_command(self):
