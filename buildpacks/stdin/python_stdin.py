@@ -6,6 +6,8 @@ from buildpacks.conda import find_python_main_file
 TEMPLATE = """
 FROM python:3.10-slim
 
+RUN apt-get update -q && apt-get install -qqy bc && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /root
