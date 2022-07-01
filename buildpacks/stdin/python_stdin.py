@@ -1,4 +1,4 @@
-from repo2docker.buildpacks.python import PythonBuildPack
+from repo2docker.buildpacks.base import BaseImage
 
 from buildpacks.conda import find_python_main_file
 
@@ -20,7 +20,7 @@ CMD {{ command }}
 """
 
 
-class Python310STDINBuildPack(PythonBuildPack):
+class Python310STDINBuildPack(BaseImage):
     template = TEMPLATE
 
     def get_command(self):
