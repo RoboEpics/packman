@@ -8,10 +8,7 @@ FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED 1
 
-# Allow target path repo is cloned to be configurable
-ARG REPO_DIR=${HOME}
-ENV REPO_DIR ${REPO_DIR}
-WORKDIR ${REPO_DIR}
+WORKDIR /root
 
 COPY stdin/python-tester.sh python-tester.sh
 COPY src/ .
