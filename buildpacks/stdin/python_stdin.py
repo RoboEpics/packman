@@ -35,5 +35,6 @@ class Python310STDINBuildPack(BaseImage):
         """
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
-        main_file = find_python_main_file()
-        return "ENTRY_FILE=%s && ./python-tester.sh" % main_file
+        # main_file = find_python_main_file()
+        return "sleep 600"
+        # return "ENTRY_FILE=%s && ./python-tester.sh" % main_file
