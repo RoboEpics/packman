@@ -12,6 +12,12 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /root
 
+{% if env -%}
+{% for item in env -%}
+ENV {{item[0]}} {{item[1]}}
+{% endfor -%}
+{% endif -%}
+
 {% for src, dst in build_script_files|dictsort %}
 COPY {{ src }} {{ dst }}
 RUN chmod +x {{ dst }}
@@ -31,9 +37,11 @@ class Python310STDINBuildPack(BaseImage):
             "/home/worker/buildpacks/stdin/python-tester.sh": "python-tester.sh"
         }
 
+    def get_env(self):
+        return [('ENTRY_FILE', find_python_main_file())]
+
     def get_command(self):
         """
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
-        main_file = find_python_main_file()
-        return "ENTRY_FILE=%s && ./python-tester.sh" % main_file
+        return "./python-tester.sh"
