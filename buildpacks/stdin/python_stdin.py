@@ -12,6 +12,7 @@ WORKDIR /root
 
 {% for src, dst in build_script_files|dictsort %}
 COPY {{ src }} {{ dst }}
+chmod +x {{ dst }}
 {% endfor -%}
 
 COPY src/ .
@@ -33,4 +34,4 @@ class Python310STDINBuildPack(BaseImage):
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
         main_file = find_python_main_file()
-        return ["mv", main_file, "main.py", "&&", "./python-tester.sh"]
+        return "mv %s main.py && ./python-tester.sh" % main_file
