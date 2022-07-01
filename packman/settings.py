@@ -53,7 +53,7 @@ QUEUE_SERVER_PASSWORD = v.get('queue.password')
 QUEUE_SERVER_API_URL = f"amqp://{'%s:%s@' % (QUEUE_SERVER_USERNAME, QUEUE_SERVER_PASSWORD) if QUEUE_SERVER_USERNAME else ''}{QUEUE_SERVER_HOST}"
 DATASET_FILLER_QUEUE_NAME = v.get('queue.dataset_filler_queue_name')
 SUBMISSION_BUILDER_QUEUE_NAME = v.get('queue.submission_builder_queue_name')
-ROOM_QUEUE_NAME = v.get('queue.room_queue_name')
+ROOM_QUEUE_NAME_PREFIX = v.get('queue.room_queue_name_prefix')
 
 # S3
 S3_ACCESS_KEY_ID = v.get('s3.access_key_id')

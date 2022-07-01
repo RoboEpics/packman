@@ -246,7 +246,8 @@ class Run(models.Model):
                 }
             }
 
-            clients.queue_client.push(json_dump(manifest), settings.ROOM_QUEUE_NAME)
+            clients.queue_client.push(json_dump(manifest), '%s-%d' % (settings.ROOM_QUEUE_NAME_PREFIX, problem.id))
+
             self.status = self.RunStatus.POD_BUILD_JOB_ENQUEUED
 
             super().save(*args, **kwargs)
