@@ -6,7 +6,7 @@ from buildpacks.conda import find_python_main_file
 TEMPLATE = """
 FROM python:3.10-slim
 
-RUN apt-get update -q && apt-get install -qqy bc && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -q && apt-get install -qqy bc time && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED 1
 
@@ -35,6 +35,5 @@ class Python310STDINBuildPack(BaseImage):
         """
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
-        # main_file = find_python_main_file()
-        return "sleep 600"
-        # return "ENTRY_FILE=%s && ./python-tester.sh" % main_file
+        main_file = find_python_main_file()
+        return "ENTRY_FILE=%s && ./python-tester.sh" % main_file
