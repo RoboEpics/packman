@@ -14,6 +14,12 @@ class EvaluationMode(models.IntegerChoices):
     ON_AUTO = 30, _("On, Auto-Evaluate")
 
 
+class ProblemCodeKind(models.IntegerChoices):
+    EVALUATOR = 10, _('Evaluator')
+    STARTER_KIT = 20, _('Starter-kit')
+    OTHER = 100, _('Other')
+
+
 class Runtimes(models.TextChoices):
     PYTHON = "Python310STDINBuildPack", _('Python 3.10')
     NODE_JS = "NodeJS16STDINBuildPack", _('NodeJS 16')

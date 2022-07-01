@@ -74,7 +74,7 @@ class Problem(models.Model):
 class ProblemCode(Code):
     problem = models.ForeignKey(Problem, models.CASCADE)
 
-    tags = TaggableManager(through=TaggedProblemCode, blank=True)
+    kind = models.PositiveSmallIntegerField(choices=ProblemCodeKind.choices, default=ProblemCodeKind.OTHER)
 
 
 class ProblemEnter(models.Model):
@@ -177,7 +177,7 @@ class Run(models.Model):
             problem = self.problem
 
             director_role = problem.director_role
-            director_code = problem.problemcode_set.filter(tags__name="evaluator").first()
+            director_code = director_code = problem.problemcode_set.filter(kind=ProblemCodeKind.EVALUATOR).first()
 
             manifest = {
                 'apiVersion': 'hub.roboepics.com/v1',
