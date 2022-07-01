@@ -2,7 +2,7 @@
 
 run_test() {
   echo "test case: $1"
-  /usr/bin/time -v bash -c "echo $1 | python3 \"$ENTRY_FILE\" >> \"$OUTPUT_FOLDER/$RESULT_FILE\""
+  /usr/bin/time -v bash -c "echo $1 | python3 \"$ENTRY_FILE\" >> \"$OUTPUT_FOLDER/$RESULT_FILE\" 2>> \"$OUTPUT_FOLDER/$ERROR_FILE\""
 }
 
 TEST_CASES=(
@@ -19,6 +19,7 @@ TEST_CASES=(
 
 OUTPUT_FOLDER="/output"
 RESULT_FILE="result"
+ERROR_FILE="error"
 MEMORY_FILE="memory"
 ELAPSED_TIME_FILE="time"
 MAX_MEMORY_USAGE="-1"
@@ -26,6 +27,8 @@ MAX_ELAPSED_TIME="-1"
 
 touch "$OUTPUT_FOLDER/$RESULT_FILE"
 cat /dev/null > "$OUTPUT_FOLDER/$RESULT_FILE"
+touch "$OUTPUT_FOLDER/$ERROR_FILE"
+cat /dev/null > "$OUTPUT_FOLDER/$ERROR_FILE"
 touch "$OUTPUT_FOLDER/$MEMORY_FILE"
 cat /dev/null > "$OUTPUT_FOLDER/$MEMORY_FILE"
 touch "$OUTPUT_FOLDER/$ELAPSED_TIME_FILE"
