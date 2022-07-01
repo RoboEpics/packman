@@ -42,7 +42,9 @@ do
 
   echo "Calculating execution time..."
   RND=$(shuf -i 1-10 -n 1)
-  TIME_ELAPSED=$(echo "$TIME_ELAPSED*1000+$RND" | bc )
+  echo "$TIME_ELAPSED"
+  echo "$RND"
+  TIME_ELAPSED=$(echo "$TIME_ELAPSED * 1000 + $RND" | bc )
   echo "$TIME_ELAPSED"
 
   echo "Updating maximum memory usage..."
