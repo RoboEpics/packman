@@ -33,22 +33,28 @@ cat /dev/null > "$OUTPUT_FOLDER/$ELAPSED_TIME_FILE"
 
 for test_case in "${TEST_CASES[@]}"
 do
+	echo "Running test case \"$test_case\""
   RESOURCES=$(run_test "$test_case" 2>&1)
 
+  echo "Parsing time command output..."
   MEMORY_USAGE=$(echo "$RESOURCES" | grep "Maximum resident" | xargs | tr -dc '0-9')
   TIME_ELAPSED=$(echo "$RESOURCES" | grep "System time" | xargs | awk '{print $4 }')
+
+  echo "Calculating execution time..."
   RND=$(shuf -i 1-10 -n 1)
   TIME_ELAPSED=$(echo "$TIME_ELAPSED*1000+$RND" | bc )
-  echo $TIME_ELAPSED
+  echo "$TIME_ELAPSED"
 
+  echo "Updating maximum memory usage..."
   if [[ $MAX_MEMORY_USAGE -lt $MEMORY_USAGE ]]; then
     MAX_MEMORY_USAGE="$MEMORY_USAGE"
   fi
 
+  echo "Updating maximum execution time..."
   if (( $(echo "$TIME_ELAPSED > $MAX_ELAPSED_TIME" | bc -l) )); then
     MAX_ELAPSED_TIME="$TIME_ELAPSED"
   fi
 done
 
-echo $MAX_MEMORY_USAGE > "$OUTPUT_FOLDER/$MEMORY_FILE"
-echo $MAX_ELAPSED_TIME > "$OUTPUT_FOLDER/$ELAPSED_TIME_FILE"
+echo "$MAX_MEMORY_USAGE" > "$OUTPUT_FOLDER/$MEMORY_FILE"
+echo "$MAX_ELAPSED_TIME" > "$OUTPUT_FOLDER/$ELAPSED_TIME_FILE"
