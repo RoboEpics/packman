@@ -41,7 +41,7 @@ do
   TIME_ELAPSED=$(echo "$TIME_ELAPSED*1000+$RND" | bc )
   echo $TIME_ELAPSED
 
-  if [ $MAX_MEMORY_USAGE -lt $MEMORY_USAGE ]; then
+  if [[ $MAX_MEMORY_USAGE -lt $MEMORY_USAGE ]]; then
     MAX_MEMORY_USAGE="$MEMORY_USAGE"
   fi
 
