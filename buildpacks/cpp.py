@@ -6,7 +6,7 @@ class CPPBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
 
     def get_base_image(self):
         """GCC image is based on buildpack-deps image, so it's compatible with repo2docker."""
-        return "gcc:10"
+        return "gcc:12"
 
     def get_assemble_scripts(self):
         """
@@ -15,6 +15,7 @@ class CPPBuildPack(CompileBuildPackMixin, BaseSmartBuildPack):
         assemble_scripts = super().get_assemble_scripts()
         assemble_scripts.extend([
             ("${NB_USER}", 'mkdir bin'),
-            ("${NB_USER}", r'find -name "*.cpp" | tr "\n" " " | xargs g++ -o bin/out')
+            ("${NB_USER}", r'find -name "*.cpp" | tr "\n" " " | xargs g++ -o bin/out'),
+            ("${NB_USER}", 'chmod +x bin/out')
         ])
         return assemble_scripts
