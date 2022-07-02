@@ -150,8 +150,12 @@ def handle_new_message(channel, method_frame, header_frame, result):
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
     submission.save()
 
-    buildpack = None
+    buildpack = None  # TODO this code was written in a rush for a specific competition. needs cleaning.
     if submission.runtime:
+        if submission.runtime == "other":
+            submission.status = Submission.SubmissionStatus.SUBMISSION_READY
+            submission.save()
+            return
         buildpack = getattr(stdin_buildpacks, submission.runtime, None)
 
     try:
