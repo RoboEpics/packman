@@ -154,7 +154,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
     if submission.runtime:
         if submission.runtime == "other":
             submission.status = Submission.SubmissionStatus.SUBMISSION_READY
-            submission.save()
+            submission.save(skip_run=True)
             return
         buildpack = getattr(stdin_buildpacks, submission.runtime, None)
 

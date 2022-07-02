@@ -112,7 +112,7 @@ class Submission(models.Model):
         if self.problem_enter.problem.repository_mode != RepositoryMode.OFF and Submission.objects.filter(problem_enter=self.problem_enter, reference=self.reference).exclude(pk=self.pk).exists():
             raise ValidationError(_("You cannot submit with the same commit reference you have submitted before!"), code='invalid')
 
-    def save(self, *args, **kwargs):
+    def save(self, skip_run=False, *args, **kwargs):
         self.clean()
 
         problem = self.problem_enter.problem
@@ -121,7 +121,7 @@ class Submission(models.Model):
 
         super().save(*args, **kwargs)
 
-        if self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
+        if not skip_run and self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
             run = Run.objects.create(owner=self.submitter, problem=problem)
             run.gatheredsubmission_set.create(submission=self, role=problem.roles.first())
             run.status = Run.RunStatus.READY
