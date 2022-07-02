@@ -121,22 +121,7 @@ class Submission(models.Model):
 
         super().save(*args, **kwargs)
 
-        if not problem.code_execution and problem.output_volume_size:
-            minio = clients.minio_client
-            prefix = str(self.problem_enter_id) + '/'
-            files = set(map(lambda f: f.object_name, minio.list_objects_v2(settings.S3_TEMP_RESULT_BUCKET_NAME, prefix=prefix)))
-            for file in files:
-                minio.copy_object(settings.S3_RESULT_BUCKET_NAME, "%s/%s" % (str(self.id), file.lstrip(prefix)), '%s/%s' % (settings.S3_TEMP_RESULT_BUCKET_NAME, file))
-
-            errors = list(minio.remove_objects(settings.S3_TEMP_RESULT_BUCKET_NAME, files))
-            if errors:
-                raise ValidationError(list(map(lambda error: ValidationError(_("Error occurred when deleting object %(object)s"), code='delete_error', params={'object': str(error)}), errors)))
-
-        if self.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
-            if problem.code_execution:
-                # Send the submission to builder queue
-                clients.queue_client.push(json_dump({'submission_id': self.id}), settings.SUBMISSION_BUILDER_QUEUE_NAME)
-        elif self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
+        if self.status == Submission.SubmissionStatus.SUBMISSION_READY and problem.evaluation_mode == EvaluationMode.ON_AUTO:
             run = Run.objects.create(owner=self.submitter, problem=problem)
             run.gatheredsubmission_set.create(submission=self, role=problem.roles.first())
             run.status = Run.RunStatus.READY
