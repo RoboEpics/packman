@@ -3,15 +3,15 @@ from repo2docker.buildpacks.base import BaseImage
 from buildpacks.base import filter_files
 
 
-def find_nodejs_main_file():
-    for file in filter_files(r"\.js$"):
+def find_erlang_main_file():
+    for file in filter_files(r"\.erl$"):
         return file
 
     raise RuntimeError("Could not find main file! Aborting dockerization...")
 
 
 TEMPLATE = """
-FROM node:18-slim
+FROM erlang:25-alpine
 
 RUN apt-get update -q && apt-get install -qqy bc time && rm -rf /var/lib/apt/lists/*
 
@@ -34,19 +34,19 @@ CMD {{ command }}
 """
 
 
-class NodeJSSTDINBuildPack(BaseImage):
+class ErlangSTDINBuildPack(BaseImage):
     template = TEMPLATE
 
     def get_build_script_files(self):
         return {
-            "/home/worker/buildpacks/stdin/nodejs-tester.sh": "nodejs-tester.sh"
+            "/home/worker/buildpacks/stdin/erlang-tester.sh": "erlang-tester.sh"
         }
 
     def get_env(self):
-        return [('ENTRY_FILE', find_nodejs_main_file())]
+        return [('ENTRY_FILE', find_erlang_main_file())]
 
     def get_command(self):
         """
         Tries to find the project's main method and it's package and returns a command with them to be run.
         """
-        return "./nodejs-tester.sh"
+        return "./erlang-tester.sh"
