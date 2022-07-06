@@ -13,7 +13,10 @@ from repo2docker.buildpacks import (
 )
 from sentry_sdk import capture_exception
 
+log_level = os.getenv('LOG_LEVEL', 'INFO')
 logger = logging.getLogger('runner')
+logger.setLevel(log_level)
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')
 
 import django
@@ -61,6 +64,7 @@ def create_docker_image(gitlab_repo, commit_hash, image_name, buildpack=None):
     # Create Docker image from git repository using jupyter-repo2docker
     r2d = Repo2Docker()
 
+    r2d.log_level = log_level
     r2d.repo = f"https://oauth2:{settings.GIT_ADMIN_TOKEN}@{settings.GIT_HOST}/{gitlab_repo}.git"
     r2d.ref = commit_hash
     r2d.output_image_spec = image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, image_name))
@@ -152,9 +156,11 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
     buildpack = None  # TODO this code was written in a rush for a specific competition. needs cleaning.
     if submission.runtime:
+        logger.info("Submission has runtime " + submission.get_runtime_display())
         if submission.runtime == "other":
             submission.status = Submission.SubmissionStatus.SUBMISSION_READY
             submission.save(skip_run=True)
+            logger.info("Skipping submission due to unsupported runtime...")
             return
         buildpack = getattr(stdin_buildpacks, submission.runtime, None)
 
