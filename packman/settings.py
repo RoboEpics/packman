@@ -72,3 +72,24 @@ S3_LOG_BUCKET_NAME = v.get('s3.log_bucket_name')
 # Docker Registry
 DOCKER_REGISTRY_HOST = v.get('registry.host')
 RESULT_ONLY_IMAGE_PATH = v.get('registry.result_only_image_path')
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {'format': '%(asctime)s - %(name)s (%(levelname)s): %(message)s', 'datefmt': '%Y-%m-%d %H:%M:%S'}
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+            'stream': 'ext://sys.stdout'
+        },
+    },
+    'root': {
+        'level': v.get('log.level').upper(),
+        'handlers': ['console']
+    }
+}
