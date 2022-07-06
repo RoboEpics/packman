@@ -82,7 +82,7 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': v.get('log.level').upper(),
             'class': 'logging.StreamHandler',
             'formatter': 'default',
             'stream': 'ext://sys.stdout'
