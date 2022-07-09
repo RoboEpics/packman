@@ -21,7 +21,9 @@ class ProblemCodeKind(models.IntegerChoices):
 
 
 class Runtimes(models.TextChoices):
-    PYTHON = "Python310STDINBuildPack", _('Python 3.10')
-    NODE_JS = "NodeJS16STDINBuildPack", _('NodeJS 16')
-    PHP = "PHP8STDINBuildPack", _('PHP 8')
-    OTHER = "other", _("Other")
+    PYTHON = 'Python310STDINBuildPack', _("Python 3.10")
+    NODE_JS = 'NodeJS18STDINBuildPack', _("NodeJS 16")
+    PHP = 'PHP8STDINBuildPack', _("PHP 8")
+    ERLANG = 'Erlang25STDINBuildPack', _("Erlang 25")
+    CPP = 'CPP12STDINBuildPack', _("C++ 12")
+    OTHER = 'other', _("Other")

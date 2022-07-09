@@ -34,7 +34,7 @@ CMD {{ command }}
 """
 
 
-class NodeJS16STDINBuildPack(BaseImage):
+class NodeJS18STDINBuildPack(BaseImage):
     template = TEMPLATE
 
     def get_build_script_files(self):
