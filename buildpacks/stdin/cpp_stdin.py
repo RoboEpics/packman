@@ -25,7 +25,7 @@ CMD {{ command }}
 """
 
 
-class ErlangSTDINBuildPack(CPPBuildPack):
+class CPP12STDINBuildPack(CPPBuildPack):
     template = TEMPLATE
 
     def get_build_script_files(self):

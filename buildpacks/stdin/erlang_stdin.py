@@ -34,7 +34,7 @@ CMD {{ command }}
 """
 
 
-class ErlangSTDINBuildPack(BaseImage):
+class Erlang25STDINBuildPack(BaseImage):
     template = TEMPLATE
 
     def get_build_script_files(self):

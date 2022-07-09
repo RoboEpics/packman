@@ -34,7 +34,7 @@ CMD {{ command }}
 """
 
 
-class PHPSTDINBuildPack(BaseImage):
+class PHP8STDINBuildPack(BaseImage):
     template = TEMPLATE
 
     def get_build_script_files(self):
