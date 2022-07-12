@@ -11,7 +11,7 @@ def find_erlang_main_file():
 
 
 TEMPLATE = """
-FROM erlang:25-alpine
+FROM erlang:25
 
 RUN apt-get update -q && apt-get install -qqy bc time && rm -rf /var/lib/apt/lists/*
 

@@ -11,7 +11,7 @@ def find_php_main_file():
 
 
 TEMPLATE = """
-FROM php:8-cli-alpine
+FROM php:8-cli
 
 RUN apt-get update -q && apt-get install -qqy bc time && rm -rf /var/lib/apt/lists/*
 
