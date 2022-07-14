@@ -14,7 +14,7 @@ TEST_CASES=(
     'Vegan Delite,+ice cream,-ice'
     'Greenie,-apple juice'
     'Freezie,+apple juice'
-    "Forest Berry"
+    'Forest Berry'
 )
 
 OUTPUT_FOLDER="/output"
