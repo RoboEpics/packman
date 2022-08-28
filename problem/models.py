@@ -162,7 +162,7 @@ class Run(models.Model):
             problem = self.problem
 
             director_role = problem.director_role
-            director_code = director_code = problem.problemcode_set.filter(kind=ProblemCodeKind.EVALUATOR).first()
+            director_code = problem.problemcode_set.filter(kind=ProblemCodeKind.EVALUATOR).first()
 
             manifest = {
                 'apiVersion': 'hub.roboepics.com/v1',
