@@ -48,6 +48,8 @@ class Problem(models.Model):
 
     gimulator_tag = models.CharField(max_length=50, default='staging')
     number_of_players = models.PositiveIntegerField(null=True, blank=True)
+    timeout = models.PositiveIntegerField(null=True, blank=True)
+    terminate_on_actor_failure = models.BooleanField(default=True)
 
     datasets = models.ManyToManyField(Data, blank=True)
 
@@ -227,7 +229,9 @@ class Run(models.Model):
                         'enabled': True,
                         'name': str(self.id),
                         'image': 'xerac/metrico:staging'
-                    }
+                    },
+                    'timeout': problem.timeout,
+                    'terminateOnActorFailure': problem.terminate_on_actor_failure
                 }
             }
 
