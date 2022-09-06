@@ -107,8 +107,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
     if 'code_id' in request:  # FIXME
         code = ProblemCode.objects.get(id=request['code_id'])
         try:
-            image_name, run_command = create_docker_image(code.get_git_repo_path(), request['reference'],
-                                                          "%s:%d" % (code.get_git_repo_path().lower(), code.id))
+            image_name, run_command = create_docker_image(code.get_git_repo_path(), request['reference'], "%s:%d" % (code.get_git_repo_path().lower(), code.id))
 
             logger.debug("Successfully created Docker image for ProblemCode %d!" % code.id)
         except Exception:
@@ -149,7 +148,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
         return
 
     # Create Docker image from Gitlab repository
-    logger.debug("Creating Docker image for submission %d..." % submission.id)
+    logger.info("Creating Docker image for submission %d..." % submission.id)
 
     submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
     submission.save()
@@ -182,17 +181,17 @@ def handle_new_message(channel, method_frame, header_frame, result):
     # submission.command = ' '.join(run_command)
     submission.save()
 
-    logger.debug("Successfully created Docker image for submission %d!" % submission.id)
+    logger.info("Successfully created Docker image for submission %d!" % submission.id)
 
     # Push the image to Docker registry
-    logger.debug("Pushing Docker image for submission %d..." % submission.id)
+    logger.info("Pushing Docker image for submission %d..." % submission.id)
     try:
         push_image_to_registry(image_name)
 
         submission.status = Submission.SubmissionStatus.SUBMISSION_READY
         submission.save()
 
-        logger.debug("Successfully pushed Docker image for submission %d!" % submission.id)
+        logger.info("Successfully pushed Docker image for submission %d!" % submission.id)
     except ChildProcessError as e:
         capture_exception()
 
