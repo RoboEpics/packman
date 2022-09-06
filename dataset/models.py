@@ -44,6 +44,8 @@ class Data(models.Model):
         READY = 40, _("Ready")
     status = models.PositiveSmallIntegerField(choices=DataStatus.choices, default=DataStatus.TRANSFER)
 
+    date_created = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         ordering = ('-date_created',)
         unique_together = ('dataset', 'version')
