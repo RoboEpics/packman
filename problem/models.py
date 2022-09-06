@@ -163,77 +163,92 @@ class Run(models.Model):
         if self.status == self.RunStatus.READY:
             problem = self.problem
 
-            director_role = problem.director_role
-            director_code = problem.problemcode_set.filter(kind=ProblemCodeKind.EVALUATOR).first()
-
-            manifest = {
-                'apiVersion': 'hub.roboepics.com/v1',
-                'kind': 'Room',
-                'metadata': {
-                    'name': 'room-%d' % self.id,
-                    'namespace': settings.HUB_NAMESPACE
-                },
-                'spec': {
-                    'id': str(self.id),
-                    'problemID': str(problem.id),
-
-                    'director': {
-                        'name': '-'.join((str(director_code.id), str(self.id))),
-                        'image': '/'.join((
-                            settings.DOCKER_REGISTRY_HOST,
-                            "%s:%d" % (director_code.get_git_repo_path().lower(), director_code.id)
-                        )),
-                        'resources': {
-                            'limits': {
-                                'cpu': str(director_role.resource_limit.cpu),
-                                'memory': str(director_role.resource_limit.memory) + 'Mi',
-                                'ephemeral-storage': str(director_role.resource_limit.ephemeral) + 'Mi'
-                            } if director_role.resource_limit else {},
-                            'requests': {
-                                'cpu': str(director_role.resource_request.cpu),
-                                'memory': str(director_role.resource_request.memory) + 'Mi',
-                                'ephemeral-storage': str(director_role.resource_request.ephemeral) + 'Mi'
-                            } if director_role.resource_request else {}
-                        } if director_role else {}
-                    },
+            if problem.gimulator_tag is None:
+                manifest = {
+                    'run_id': self.id,
+                    'problem-id': problem.id,
                     'actors': [
                         {
-                            'name': str(gathered_submission.id),
-                            'image': '/'.join((
+                            'id': gathered_submission.id,
+                            'submission-id': gathered_submission.submission.id
+                        } for gathered_submission in self.gatheredsubmission_set.all()
+                    ]
+                }
+            else:
+                director_role = problem.director_role
+                director_code = problem.problemcode_set.filter(kind=ProblemCodeKind.EVALUATOR).first()
+
+                dataset_paths_envs = [{'name': 'DATA_%d_PATH' % data.id, 'value': '/data/' + data.pvc_name} for data in problem.datasets.all()]
+
+                manifest = {
+                    'apiVersion': 'hub.roboepics.com/v1',
+                    'kind': 'Room',
+                    'metadata': {
+                        'name': 'room-%d' % self.id,
+                        'namespace': settings.HUB_NAMESPACE
+                    },
+                    'spec': {
+                        'id': str(self.id),
+                        'problemID': str(problem.id),
+
+                        'director': {
+                            'name': '-'.join((str(director_code.id), str(self.id))),
+                            'image': '%s/%s:%d' % (
                                 settings.DOCKER_REGISTRY_HOST,
-                                gathered_submission.submission.generate_image_name()
-                            )),
-                            'role': gathered_submission.role.name if gathered_submission.role else 'agent',
-                            'envs': [
-                                {'name': 'S3_ENDPOINT_URL', 'value': settings.S3_ENDPOINT_URL.split('//')[1]},
-                                {'name': 'S3_ACCESS_KEY_ID', 'value': settings.S3_ACCESS_KEY_ID},
-                                {'name': 'S3_SECRET_ACCESS_KEY', 'value': settings.S3_SECRET_ACCESS_KEY},
-                                {'name': 'S3_RESULT_BUCKET_NAME', 'value': settings.S3_RESULT_BUCKET_NAME},
-                                {'name': 'S3_PATH_PREFIX', 'value': str(gathered_submission.submission_id) + '/'}
-                            ] if problem.code_execution is False else [],
+                                director_code.get_git_repo_path().lower(),
+                                director_code.id
+                            ),
                             'resources': {
                                 'limits': {
-                                    'cpu': str(gathered_submission.role.resource_limit.cpu),
-                                    'memory': str(gathered_submission.role.resource_limit.memory) + 'Mi',
-                                    'ephemeral-storage': str(gathered_submission.role.resource_limit.ephemeral) + 'Mi'
-                                } if gathered_submission.role.resource_limit else {},
+                                    'cpu': str(director_role.resource_limit.cpu),
+                                    'memory': str(director_role.resource_limit.memory) + 'Mi',
+                                    'ephemeral-storage': str(director_role.resource_limit.ephemeral) + 'Mi'
+                                } if director_role.resource_limit else {},
                                 'requests': {
-                                    'cpu': str(gathered_submission.role.resource_request.cpu),
-                                    'memory': str(gathered_submission.role.resource_request.memory) + 'Mi',
-                                    'ephemeral-storage': str(gathered_submission.role.resource_request.ephemeral) + 'Mi'
-                                } if gathered_submission.role.resource_request else {}
-                            } if gathered_submission.role else {}
-                        } for gathered_submission in self.gatheredsubmission_set.all()
-                    ],
-                    'metrico': {
-                        'enabled': True,
-                        'name': str(self.id),
-                        'image': 'xerac/metrico:staging'
-                    },
-                    'timeout': problem.timeout,
-                    'terminateOnActorFailure': problem.terminate_on_actor_failure
+                                    'cpu': str(director_role.resource_request.cpu),
+                                    'memory': str(director_role.resource_request.memory) + 'Mi',
+                                    'ephemeral-storage': str(director_role.resource_request.ephemeral) + 'Mi'
+                                } if director_role.resource_request else {}
+                            } if director_role else {}
+                        },
+                        'actors': [
+                            {
+                                'name': str(gathered_submission.id),
+                                'image': '/'.join((
+                                    settings.DOCKER_REGISTRY_HOST,
+                                    gathered_submission.submission.generate_image_name()
+                                )),
+                                'role': gathered_submission.role.name if gathered_submission.role else 'agent',
+                                'envs': [
+                                    {'name': 'S3_ENDPOINT_URL', 'value': settings.S3_ENDPOINT_URL.split('//')[1]},
+                                    {'name': 'S3_ACCESS_KEY_ID', 'value': settings.S3_ACCESS_KEY_ID},
+                                    {'name': 'S3_SECRET_ACCESS_KEY', 'value': settings.S3_SECRET_ACCESS_KEY},
+                                    {'name': 'S3_RESULT_BUCKET_NAME', 'value': settings.S3_RESULT_BUCKET_NAME},
+                                    {'name': 'S3_PATH_PREFIX', 'value': str(gathered_submission.submission_id) + '/'}
+                                ] if problem.code_execution is False else dataset_paths_envs,
+                                'resources': {
+                                    'limits': {
+                                        'cpu': str(gathered_submission.role.resource_limit.cpu),
+                                        'memory': str(gathered_submission.role.resource_limit.memory) + 'Mi',
+                                        'ephemeral-storage': str(gathered_submission.role.resource_limit.ephemeral) + 'Mi'
+                                    } if gathered_submission.role.resource_limit else {},
+                                    'requests': {
+                                        'cpu': str(gathered_submission.role.resource_request.cpu),
+                                        'memory': str(gathered_submission.role.resource_request.memory) + 'Mi',
+                                        'ephemeral-storage': str(gathered_submission.role.resource_request.ephemeral) + 'Mi'
+                                    } if gathered_submission.role.resource_request else {}
+                                } if gathered_submission.role else {}
+                            } for gathered_submission in self.gatheredsubmission_set.all()
+                        ],
+                        'metrico': {
+                            'enabled': True,
+                            'name': str(self.id),
+                            'image': 'xerac/metrico:staging'
+                        },
+                        'timeout': problem.timeout,
+                        'terminateOnActorFailure': problem.terminate_on_actor_failure
+                    }
                 }
-            }
 
             clients.queue_client.push(json_dump(manifest), '%s-%d' % (settings.ROOM_QUEUE_NAME_PREFIX, problem.id))
 
