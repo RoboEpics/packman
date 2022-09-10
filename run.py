@@ -114,7 +114,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
             capture_exception()
             logger.error("Something went wrong while building Docker image for ProblemCode %d!" % code.id)
 
-            channel.basic_ack(method_frame.delivery_tag)
+            client.ack(channel, method_frame.delivery_tag)
             # client.delete(result)
 
             return
@@ -128,7 +128,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
             logger.error("Something went wrong while pushing Docker image for ProblemCode %d: %s!" % (code.id, str(e)))
 
-        channel.basic_ack(method_frame.delivery_tag)
+        client.ack(channel, method_frame.delivery_tag)
         # client.delete(result)
         return
 
@@ -139,7 +139,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
         logger.error("No submission with the given id exists! Dropping message from queue...")
 
-        channel.basic_ack(method_frame.delivery_tag)
+        client.ack(channel, method_frame.delivery_tag)
         # client.delete(result)
         return
 
@@ -172,8 +172,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_FAILED
         submission.save()
 
-        channel.basic_ack(method_frame.delivery_tag)
-        # client.delete(result)
+        client.ack(channel, method_frame.delivery_tag)
 
         return
 
@@ -216,7 +215,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
     #     owner_id=submission.owner_id
     # )
 
-    channel.basic_ack(method_frame.delivery_tag)
+    client.ack(channel, method_frame.delivery_tag)
     # client.delete(result)
 
 
