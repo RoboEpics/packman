@@ -1,7 +1,7 @@
 stages:
   - build
 
-build:
+Build and push Docker image:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:debug
