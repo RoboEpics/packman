@@ -1,6 +1,6 @@
 import os
 import shlex
-from collections import Mapping
+from typing import Mapping
 
 from buildpacks.base import BaseSimpleBuildPack
 from ruamel.yaml import YAML
