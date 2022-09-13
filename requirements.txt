@@ -4,7 +4,7 @@ jupyter==1.0.0
 psycopg2==2.9.3
 python-gitlab==3.9.0
 git+https://github.com/Syfract/simple-rabbitmq-client.git@35e9134ffb2bf3b405e33b03581f116e1767aecc#egg=rabbitmq_client
-git+https://github.com/AliMirlou/repo2docker.git@2964938c1e4e647f30310d2f3779f11be8a8ec0f#egg=jupyter-repo2docker
+git+https://github.com/AliMirlou/repo2docker.git@634318f8c6e9c82a48719239fb3ead1367920564#egg=jupyter-repo2docker
 sentry-sdk==1.9.8
 vyper-config==1.1.1
 wheel==0.37.1
