@@ -196,8 +196,6 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
         logger.error("Something went wrong while pushing Docker image for submission %d: %s!" % (submission.id, str(e)))
 
-        return
-
     # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
     # Leaderboard.objects.get(
     #     problem_id=submission.problem_id
