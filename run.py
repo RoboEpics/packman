@@ -107,8 +107,10 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
     if 'code_id' in request:  # FIXME
         code = ProblemCode.objects.get(id=request['code_id'])
+        image_name = "%s/%s:%d" % (settings.DOCKER_REGISTRY_HOST, code.get_git_repo_path().lower(), code.id)
+
         try:
-            image_name, run_command = create_docker_image(code.get_git_repo_path(), request['reference'], "%s:%d" % (code.get_git_repo_path().lower(), code.id))
+            create_docker_image(code.get_git_repo_path(), request['reference'], image_name)
 
             logger.debug("Successfully created Docker image for ProblemCode %d!" % code.id)
         except Exception:
@@ -136,23 +138,25 @@ def handle_new_message(channel, method_frame, header_frame, result):
     except Submission.DoesNotExist:
         capture_exception()
 
-        logger.error("No submission with the given id exists! Dropping message from queue...")
+        logger.error("No submission with ID %s exists! Dropping message from queue..." % request['submission_id'])
 
         client.ack(method_frame.delivery_tag)
         return
 
+    enter = submission.problem_enter
+
+    logger.info('Processing submission of "%s" with ID %d...' % (enter.team.name, submission.id))
+
     if submission.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
+        logger.info("Submission is eligible for build.")
+
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_JOB_ENQUEUED
         submission.save()
-
-    enter = submission.problem_enter
-    if enter is None:
-        return
 
     image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, submission.generate_image_name()))
     if submission.status == Submission.SubmissionStatus.IMAGE_BUILD_JOB_ENQUEUED:
         # Create Docker image from Gitlab repository
-        logger.info("Creating Docker image for submission %d..." % submission.id)
+        logger.info('Creating Docker image...')
 
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
         submission.save()
@@ -171,7 +175,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
             create_docker_image(enter.code.get_git_repo_path(), submission.reference, image_name, buildpack)
         except Exception:
             capture_exception()
-            logger.error("Something went wrong while building Docker image for submission %d!" % submission.id)
+            logger.error("Something went wrong while building Docker image for submission!")
 
             submission.status = Submission.SubmissionStatus.IMAGE_BUILD_FAILED
             submission.save()
@@ -184,25 +188,25 @@ def handle_new_message(channel, method_frame, header_frame, result):
         # submission.command = ' '.join(run_command)
         submission.save()
 
-        logger.info("Successfully created Docker image for submission %d!" % submission.id)
+        logger.info("Successfully created Docker image for submission!")
 
     if submission.status == Submission.SubmissionStatus.IMAGE_BUILD_SUCCESSFUL:
         # Push the image to Docker registry
-        logger.info("Pushing Docker image for submission %d..." % submission.id)
+        logger.info("Pushing Docker image for submission...")
         try:
             push_image_to_registry(image_name)
 
             submission.status = Submission.SubmissionStatus.SUBMISSION_READY
             submission.save()
 
-            logger.info("Successfully pushed Docker image for submission %d!" % submission.id)
+            logger.info("Successfully pushed Docker image for submission!")
         except ChildProcessError as e:
             capture_exception()
 
             submission.status = Submission.SubmissionStatus.IMAGE_PUSH_FAILED
             submission.save()
 
-            logger.error("Something went wrong while pushing Docker image for submission %d: %s!" % (submission.id, str(e)))
+            logger.error("Something went wrong while pushing Docker image for submission: %s!" % str(e))
 
     # Reset operator's rating for this problem, FIXME it's better to be in a post_save signal
     # Leaderboard.objects.get(
