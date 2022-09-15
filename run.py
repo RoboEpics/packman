@@ -153,8 +153,14 @@ def handle_new_message(channel, method_frame, header_frame, result):
         submission.status = Submission.SubmissionStatus.IMAGE_BUILD_JOB_ENQUEUED
         submission.save()
 
-    image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, submission.generate_image_name()))
     if submission.status == Submission.SubmissionStatus.IMAGE_BUILD_JOB_ENQUEUED:
+        logger.info("Starting to build submission...")
+
+        submission.status = Submission.SubmissionStatus.IMAGE_BUILD_STARTED
+        submission.save()
+
+    image_name = '/'.join((settings.DOCKER_REGISTRY_HOST, submission.generate_image_name()))
+    if submission.status == Submission.SubmissionStatus.IMAGE_BUILD_STARTED:
         # Create Docker image from Gitlab repository
         logger.info('Creating Docker image...')
 
