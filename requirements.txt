@@ -3,6 +3,7 @@ django-taggit==3.0.0
 jupyter==1.0.0
 psycopg2==2.9.3
 python-gitlab==3.9.0
+pyzmq==23.2.1
 git+https://github.com/Syfract/simple-rabbitmq-client.git@dcd3bed33f81589e53853a89b150cf3dfcf5a6e8#egg=rabbitmq_client
 git+https://github.com/AliMirlou/repo2docker.git@7d0b424d8200f2adf8e60f0d94ff245acb28a5a2#egg=jupyter-repo2docker
 sentry-sdk==1.9.8
