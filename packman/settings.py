@@ -79,6 +79,11 @@ LOGGING = {
             'stream': 'ext://sys.stdout'
         },
     },
+    'loggers': {
+        'pika': {
+            'level': 'INFO'
+        }
+    },
     'root': {
         'level': v.get('log.level').upper(),
         'handlers': ['console']
