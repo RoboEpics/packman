@@ -82,6 +82,9 @@ LOGGING = {
     'loggers': {
         'pika': {
             'level': 'INFO'
+        },
+        'urllib3': {
+            'level': 'INFO'
         }
     },
     'root': {
