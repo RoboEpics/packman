@@ -13,9 +13,9 @@ from repo2docker.buildpacks import (
 )
 from sentry_sdk import capture_exception
 
-log_level = os.getenv('LOG_LEVEL', 'INFO')
+# log_level = os.getenv('ROBOEPICS_LOG_LEVEL', 'INFO')
 logger = logging.getLogger('runner')
-logger.setLevel(log_level)
+# logger.setLevel(log_level)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')
 
@@ -65,7 +65,7 @@ def create_docker_image(gitlab_repo, commit_hash, image_name, buildpack=None):
     # Create Docker image from git repository using jupyter-repo2docker
     r2d = Repo2Docker()
 
-    r2d.log_level = log_level
+    r2d.log_level = 'INFO'
     r2d.repo = f"https://oauth2:{settings.GIT_ADMIN_TOKEN}@{settings.GIT_HOST}/{gitlab_repo}.git"
     r2d.ref = commit_hash
     r2d.output_image_spec = image_name
