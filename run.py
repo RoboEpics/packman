@@ -145,7 +145,7 @@ def handle_new_message(channel, method_frame, header_frame, result):
 
     enter = submission.problem_enter
 
-    logger.info('Processing submission of "%s" with ID %d...' % (enter.team.name, submission.id))
+    logger.info('Processing submission of "%s" with ID %d and status %s...' % (enter.team.name, submission.id, submission.get_status_display()))
 
     if submission.status == Submission.SubmissionStatus.WAITING_IN_QUEUE:
         logger.info("Submission is eligible for build.")
