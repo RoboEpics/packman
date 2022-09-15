@@ -222,6 +222,8 @@ def handle_new_message(channel, method_frame, header_frame, result):
     #     owner_id=submission.owner_id
     # )
 
+    logger.info("Build process is finished! Sending an ack...")
+
     client.ack(method_frame.delivery_tag)
 
 
