@@ -14,7 +14,7 @@ class IPythonNotebookBuildPack(DetectByFilenamePatternMixin, PythonBuildPack):
 
         # Replace Conda buildpack dependency file with the one which has Jupyter
         del files[next(filter(lambda k: k.startswith('conda/environment.'), files.keys()))]
-        files[path.join(path.dirname(__file__), 'environment.yml')] = "/tmp/environment.yml"
+        files[path.join(path.dirname(__file__), 'environment.yml')] = "/tmp/env/environment.yml"
 
         return files
 

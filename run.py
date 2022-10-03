@@ -13,9 +13,7 @@ from repo2docker.buildpacks import (
 )
 from sentry_sdk import capture_exception
 
-# log_level = os.getenv('ROBOEPICS_LOG_LEVEL', 'INFO')
 logger = logging.getLogger('runner')
-# logger.setLevel(log_level)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'packman.settings')
 
