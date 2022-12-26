@@ -8,4 +8,4 @@ python-gitlab==2.10.1
 -e git://github.com/AliMirlou/repo2docker.git@1983c4a8d441081c3c82f26c984c415f8ca58e89#egg=jupyter-repo2docker
 sentry-sdk==1.5.1
 vyper-config==1.0.0
-wheel==0.37.0
+wheel==0.38.1
